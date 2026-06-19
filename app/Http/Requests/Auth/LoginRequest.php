@@ -83,6 +83,16 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        $user = Auth::user();
+
+        if ($user?->isCustomer() && ! $user->email_verified_at) {
+            Auth::logout();
+
+            throw ValidationException::withMessages([
+                'email' => __('menu.email_not_verified'),
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

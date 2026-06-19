@@ -39,5 +39,11 @@ return [
             'route' => 'platform.tenants.index',
             'route_patterns' => ['platform.tenants.*'],
         ],
+        'licenses' => [
+            'label' => 'menu.licenses',
+            'icon' => 'bi-key',
+            'route' => 'platform.licenses.index',
+            'route_patterns' => ['platform.licenses.*'],
+        ],
     ],
 ];

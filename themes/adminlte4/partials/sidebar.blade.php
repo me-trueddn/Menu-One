@@ -1,13 +1,26 @@
 <aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
     <div class="sidebar-brand">
-        <a href="{{ route('home') }}" class="brand-link">
-            <span class="brand-text fw-light">{{ __('menu.app_name') }}</span>
-        </a>
+        @include('theme::partials.brand-logo')
     </div>
     <div class="sidebar-wrapper">
         <nav class="mt-2">
             <ul class="nav sidebar-menu flex-column" role="menu">
-                @if($currentUser->canAccessPlatformPanel())
+                @php($inSupportMode = !empty($inSupportMode))
+
+                @if($inSupportMode)
+                    <li class="nav-header">{{ __('menu.support_mode') }}</li>
+                    <li class="nav-item">
+                        <form method="POST" action="{{ route('platform.support.disconnect') }}" class="w-100">
+                            @csrf
+                            <button type="submit" class="nav-link btn btn-link text-start w-100 text-warning border-0">
+                                <i class="nav-icon bi bi-box-arrow-left"></i>
+                                <p>{{ __('menu.exit_support') }}</p>
+                            </button>
+                        </form>
+                    </li>
+                @endif
+
+                @if($currentUser->canAccessPlatformPanel() && ! $inSupportMode)
                     <li class="nav-header">{{ __('menu.management') }}</li>
                     @foreach(config('platform_modules.modules', []) as $moduleKey => $module)
                         @if($currentUser->canPlatformModule($moduleKey, 'view'))
@@ -21,7 +34,7 @@
                     @endforeach
                 @endif
 
-                @if($currentUser->hasRole('cafe_admin'))
+                @if($currentUser->hasRole('cafe_admin') || $inSupportMode)
                     <li class="nav-header">{{ __('menu.management') }}</li>
                     <li class="nav-item">
                         <a href="{{ route('admin.dashboard') }}" class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">

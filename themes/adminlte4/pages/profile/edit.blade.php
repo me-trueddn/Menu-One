@@ -263,7 +263,7 @@
             @if($canCreateCafe)
                 <h6 class="fw-semibold">{{ __('menu.create_cafe') }}</h6>
                 <p class="text-muted small">{{ __('menu.create_cafe_hint') }}</p>
-                <form method="POST" action="{{ route('profile.cafe.store') }}" class="row g-3">
+                <form method="POST" action="{{ route('profile.cafe.store') }}" enctype="multipart/form-data" class="row g-3">
                     @csrf
                     <div class="col-md-6">
                         <label class="form-label" for="cafe_name">{{ __('menu.cafe_name') }}</label>
@@ -279,6 +279,11 @@
                                value="{{ old('slug') }}" required pattern="[a-zA-Z0-9_-]+">
                         @error('slug')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         <div class="form-text">{{ __('menu.cafe_slug_hint') }}</div>
+                    </div>
+                    @include('theme::partials.company-fields', ['values' => $companyDefaults])
+                    <div class="col-md-6">
+                        <label class="form-label">{{ __('menu.cafe_logo') }}</label>
+                        <input type="file" name="logo" class="form-control" accept="image/*">
                     </div>
                     <div class="col-12">
                         <button type="submit" class="btn btn-primary">{{ __('menu.create_cafe') }}</button>

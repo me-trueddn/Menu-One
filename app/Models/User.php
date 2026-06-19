@@ -31,6 +31,7 @@ class User extends Authenticatable
         'oauth_provider_id',
         'password',
         'password_changed_at',
+        'email_verified_at',
         'is_active',
         'is_super_admin',
         'two_factor_enabled',

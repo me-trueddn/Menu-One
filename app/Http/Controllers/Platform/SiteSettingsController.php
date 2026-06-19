@@ -9,6 +9,7 @@ use App\Support\OAuthPolicy;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class SiteSettingsController extends Controller
@@ -41,6 +42,16 @@ class SiteSettingsController extends Controller
             'has_oauth_microsoft_secret' => (bool) Setting::get('oauth_microsoft_client_secret'),
             'oauth_google_redirect' => url('/auth/google/callback'),
             'oauth_microsoft_redirect' => url('/auth/microsoft/callback'),
+            'verification_link_expires_minutes' => Setting::get('verification_link_expires_minutes', '1440'),
+            'email_verification_subject' => Setting::get('email_verification_subject', ''),
+            'email_verification_body' => Setting::get('email_verification_body', ''),
+            'default_company_name' => Setting::get('default_company_name', ''),
+            'default_company_tax_number' => Setting::get('default_company_tax_number', ''),
+            'default_company_phone' => Setting::get('default_company_phone', ''),
+            'default_company_email' => Setting::get('default_company_email', ''),
+            'default_company_address' => Setting::get('default_company_address', ''),
+            'site_logo_path' => Setting::get('site_logo_path', ''),
+            'site_favicon_path' => Setting::get('site_favicon_path', ''),
         ];
 
         return view('theme::pages.platform.settings.site', compact('settings'));
@@ -62,6 +73,16 @@ class SiteSettingsController extends Controller
             'oauth_google_client_secret' => ['nullable', 'string', 'max:255'],
             'oauth_microsoft_client_id' => ['nullable', 'string', 'max:255'],
             'oauth_microsoft_client_secret' => ['nullable', 'string', 'max:255'],
+            'verification_link_expires_minutes' => ['nullable', 'integer', 'min:5', 'max:10080'],
+            'email_verification_subject' => ['nullable', 'string', 'max:255'],
+            'email_verification_body' => ['nullable', 'string', 'max:10000'],
+            'default_company_name' => ['nullable', 'string', 'max:255'],
+            'default_company_tax_number' => ['nullable', 'string', 'max:50'],
+            'default_company_phone' => ['nullable', 'string', 'max:30'],
+            'default_company_email' => ['nullable', 'email', 'max:255'],
+            'default_company_address' => ['nullable', 'string', 'max:1000'],
+            'site_logo' => ['nullable', 'image', 'max:2048'],
+            'site_favicon' => ['nullable', 'image', 'max:1024'],
         ]);
 
         $pairs = [
@@ -83,6 +104,14 @@ class SiteSettingsController extends Controller
             'oauth_microsoft_client_id' => $request->input('oauth_microsoft_client_id', ''),
             'oauth_allow_login' => $request->boolean('oauth_allow_login') ? '1' : '0',
             'oauth_allow_register' => $request->boolean('oauth_allow_register') ? '1' : '0',
+            'verification_link_expires_minutes' => (string) ($validated['verification_link_expires_minutes'] ?? 1440),
+            'email_verification_subject' => $validated['email_verification_subject'] ?? '',
+            'email_verification_body' => $validated['email_verification_body'] ?? '',
+            'default_company_name' => $validated['default_company_name'] ?? '',
+            'default_company_tax_number' => $validated['default_company_tax_number'] ?? '',
+            'default_company_phone' => $validated['default_company_phone'] ?? '',
+            'default_company_email' => $validated['default_company_email'] ?? '',
+            'default_company_address' => $validated['default_company_address'] ?? '',
         ];
 
         if (! empty($validated['captcha_secret_key'])) {
@@ -98,6 +127,14 @@ class SiteSettingsController extends Controller
         }
 
         Setting::setMany($pairs, 'site');
+
+        if ($request->hasFile('site_logo')) {
+            Setting::set('site_logo_path', 'storage/'.$request->file('site_logo')->store('branding', 'public'), 'site');
+        }
+
+        if ($request->hasFile('site_favicon')) {
+            Setting::set('site_favicon_path', 'storage/'.$request->file('site_favicon')->store('branding', 'public'), 'site');
+        }
 
         return redirect()
             ->route('platform.settings.site')

@@ -15,7 +15,7 @@ class Setting extends Model
 
     public static function get(string $key, mixed $default = null): mixed
     {
-        $settings = Cache::rememberForever('app.settings', function () {
+        $settings = static::cache()->rememberForever('app.settings', function () {
             return static::query()->pluck('value', 'key')->all();
         });
 
@@ -29,7 +29,7 @@ class Setting extends Model
             ['value' => $value, 'group' => $group]
         );
 
-        Cache::forget('app.settings');
+        static::cache()->forget('app.settings');
     }
 
     public static function setMany(array $pairs, string $group = 'general'): void
@@ -41,6 +41,11 @@ class Setting extends Model
 
     public static function flushCache(): void
     {
-        Cache::forget('app.settings');
+        static::cache()->forget('app.settings');
+    }
+
+    protected static function cache(): \Illuminate\Contracts\Cache\Repository
+    {
+        return Cache::store('central');
     }
 }

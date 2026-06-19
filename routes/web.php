@@ -11,7 +11,7 @@ use App\Http\Controllers\TenantSwitchController;
 use App\Http\Controllers\Kitchen\KitchenController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Platform\CustomerController;
-use App\Http\Controllers\Platform\MailSettingsController;
+use App\Http\Controllers\Platform\LicenseTypeController;
 use App\Http\Controllers\Platform\SiteSettingsController;
 use App\Http\Controllers\Platform\TenantController;
 use App\Http\Controllers\Platform\UserController;
@@ -60,6 +60,11 @@ Route::middleware(['auth'])->group(function () {
         Route::put('settings/mail', [MailSettingsController::class, 'update'])->name('settings.mail.update');
         Route::post('settings/mail/test', [MailSettingsController::class, 'test'])->name('settings.mail.test');
         Route::resource('tenants', TenantController::class)->except(['show']);
+        Route::post('tenants/{tenant}/connect', [TenantController::class, 'connect'])->name('tenants.connect');
+        Route::post('support/disconnect', [TenantController::class, 'disconnectSupport'])->name('support.disconnect');
+        Route::post('tenants/{tenant}/stop', [TenantController::class, 'stop'])->name('tenants.stop');
+        Route::post('tenants/{tenant}/resume', [TenantController::class, 'resume'])->name('tenants.resume');
+        Route::resource('licenses', LicenseTypeController::class)->except(['show']);
     });
 
     Route::middleware(['tenant', 'cafe'])->prefix('admin')->name('admin.')->group(function () {

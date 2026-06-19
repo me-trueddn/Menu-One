@@ -5,7 +5,9 @@
             <i class="fa fa-times"></i>
         </button>
 
-        <div class="brand-name">{{ strtoupper(\App\Support\SiteConfig::name()) }}</div>
+        <div class="text-center mb-3">
+            @include('theme::partials.brand-logo', ['height' => 48])
+        </div>
         <h2 class="login-title" id="registerTitle">{{ __('menu.register_welcome') }}</h2>
         <p class="login-subtitle">{{ __('menu.register_subtitle') }}</p>
 

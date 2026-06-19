@@ -6,6 +6,7 @@ use App\Models\DiningTable;
 use App\Models\OrderItem;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\SupportSessionService;
 use App\Support\TenantAccess;
 use App\Support\VersionManager;
 use Illuminate\Support\Facades\Auth;
@@ -38,10 +39,13 @@ class AppServiceProvider extends ServiceProvider
             $view->with('currentUser', $user);
 
             if ($user) {
+                $activeTenantId = TenantAccess::resolveActiveTenantId($user);
                 $view->with('selectableTenants', TenantAccess::selectableTenants($user));
-                $view->with('activeTenantId', TenantAccess::resolveActiveTenantId($user));
+                $view->with('activeTenantId', $activeTenantId);
                 $view->with('activeTenant', TenantAccess::activeTenant($user));
                 $view->with('canSwitchTenants', TenantAccess::canSwitchTenants($user));
+                $view->with('inSupportMode', TenantAccess::isInSupportMode($user));
+                $view->with('activeSupportSession', app(SupportSessionService::class)->activeForTenant($activeTenantId));
             }
         });
 

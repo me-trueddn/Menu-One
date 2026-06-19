@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Stancl\Tenancy\Database\Concerns\HasDomains;
 use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
 
@@ -19,11 +21,21 @@ class Tenant extends BaseTenant
             'slug',
             'is_active',
             'owner_user_id',
+            'company_name',
+            'company_tax_number',
+            'company_phone',
+            'company_email',
+            'company_address',
+            'logo_path',
+            'stopped_at',
+            'stop_note',
+            'stopped_by_user_id',
         ];
     }
 
     protected $casts = [
         'is_active' => 'boolean',
+        'stopped_at' => 'datetime',
     ];
 
     public function owner(): BelongsTo
@@ -31,7 +43,12 @@ class Tenant extends BaseTenant
         return $this->belongsTo(User::class, 'owner_user_id');
     }
 
-    public function staffUsers()
+    public function stoppedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'stopped_by_user_id');
+    }
+
+    public function staffUsers(): HasMany
     {
         return $this->hasMany(User::class, 'tenant_id', 'id');
     }
@@ -39,5 +56,31 @@ class Tenant extends BaseTenant
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'tenant_user')->withTimestamps();
+    }
+
+    public function licenses(): HasMany
+    {
+        return $this->hasMany(TenantLicense::class, 'tenant_id', 'id');
+    }
+
+    public function currentLicense(): HasOne
+    {
+        return $this->hasOne(TenantLicense::class, 'tenant_id', 'id')->latestOfMany('expires_at');
+    }
+
+    public function isStopped(): bool
+    {
+        return ! $this->is_active && $this->stopped_at !== null;
+    }
+
+    public function isOperational(): bool
+    {
+        if ($this->isStopped()) {
+            return false;
+        }
+
+        $license = $this->relationLoaded('currentLicense') ? $this->currentLicense : $this->currentLicense()->first();
+
+        return $license === null || $license->isValid();
     }
 }

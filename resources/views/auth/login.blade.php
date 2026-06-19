@@ -5,7 +5,9 @@
     @include('theme::partials.auth.locale-switcher')
 </div>
 
-<div class="brand-name">{{ strtoupper(\App\Support\SiteConfig::name()) }}</div>
+<div class="brand-name">
+    <a href="{{ route('home') }}"><img src="{{ \App\Support\Branding::logoUrl() }}" alt="{{ \App\Support\SiteConfig::name() }}" style="height: 42px;"></a>
+</div>
 
 <h1 class="login-title">{{ __('menu.login_welcome') }}</h1>
 <p class="login-subtitle">

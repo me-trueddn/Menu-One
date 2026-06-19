@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Models\Tenant;
-use Stancl\Tenancy\Bootstrappers\CacheTenancyBootstrapper;
 use Stancl\Tenancy\Bootstrappers\QueueTenancyBootstrapper;
 use Stancl\Tenancy\Database\Models\Domain;
 use Stancl\Tenancy\TenantDatabaseManagers\MySQLDatabaseManager;
@@ -35,7 +34,8 @@ return [
      */
     'bootstrappers' => [
         // Single-database tenancy: DatabaseTenancyBootstrapper disabled.
-        CacheTenancyBootstrapper::class,
+        // CacheTenancyBootstrapper requires a tag-capable store (redis/memcached).
+        // Default database/file cache drivers do not support tags.
         QueueTenancyBootstrapper::class,
     ],
 

@@ -25,6 +25,14 @@ class TenantAccess
             return null;
         }
 
+        if ($user->canAccessPlatformPanel() && session('support_tenant_mode')) {
+            $sessionId = session('active_tenant_id');
+
+            if (is_string($sessionId) && $sessionId !== '') {
+                return $sessionId;
+            }
+        }
+
         $selectable = self::selectableTenants($user);
 
         if ($selectable->isEmpty()) {
@@ -44,11 +52,46 @@ class TenantAccess
         return null;
     }
 
-    public static function setActiveTenant(User $user, string $tenantId): void
+    public static function setActiveTenant(User $user, string $tenantId, bool $support = false): void
     {
+        if ($support && ($user->isSuperAdmin() || $user->canAccessPlatformPanel())) {
+            session(['active_tenant_id' => $tenantId, 'support_tenant_mode' => true]);
+
+            return;
+        }
+
         abort_unless($user->canAccessTenant($tenantId), 403);
 
         session(['active_tenant_id' => $tenantId]);
+        session()->forget('support_tenant_mode');
+    }
+
+    public static function isInSupportMode(?User $user = null): bool
+    {
+        $user ??= auth()->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        return session('support_tenant_mode')
+            && ($user->isSuperAdmin() || $user->canAccessPlatformPanel());
+    }
+
+    public static function clearSupportMode(): void
+    {
+        session()->forget(['support_tenant_mode', 'active_tenant_id']);
+    }
+
+    public static function resolveSupportTenantId(User $user): ?string
+    {
+        if ($user->isSuperAdmin() || $user->canAccessPlatformPanel()) {
+            $sessionId = session('active_tenant_id');
+
+            return is_string($sessionId) && $sessionId !== '' ? $sessionId : null;
+        }
+
+        return null;
     }
 
     /** @return \Illuminate\Support\Collection<int, Tenant> */

@@ -76,6 +76,12 @@
                                         <button class="btn btn-outline-warning">{{ $user->is_active ? __('menu.deactivate') : __('menu.activate') }}</button>
                                     </form>
                                     <a href="{{ route('platform.users.edit', $user) }}" class="btn btn-outline-primary">{{ __('menu.edit') }}</a>
+                                    @if($currentUser->canPlatformModule('users', 'edit') && $user->id !== $currentUser->id)
+                                        <form action="{{ route('platform.users.destroy', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('menu.confirm_delete') }}')">
+                                            @csrf @method('DELETE')
+                                            <button class="btn btn-outline-danger">{{ __('menu.delete') }}</button>
+                                        </form>
+                                    @endif
                                 @else
                                     <span class="text-muted small">{{ __('menu.super_admin_protected') }}</span>
                                 @endunless

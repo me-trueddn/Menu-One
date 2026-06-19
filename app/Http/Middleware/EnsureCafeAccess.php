@@ -23,9 +23,26 @@ class EnsureCafeAccess
         }
 
         $tenantId = (string) $tenant->getTenantKey();
+        $tenantModel = \App\Models\Tenant::query()->with('stoppedBy', 'currentLicense')->find($tenantId);
 
-        if (! $user->canAccessTenant($tenantId)) {
+        $isSupport = $user->isSuperAdmin() || ($user->canAccessPlatformPanel() && session('support_tenant_mode'));
+
+        if (! $isSupport && ! $user->canAccessTenant($tenantId)) {
             abort(403, __('menu.no_cafe_access'));
+        }
+
+        if (! $isSupport && $tenantModel) {
+            if ($tenantModel->isStopped()) {
+                abort(403, __('menu.cafe_stopped_message', [
+                    'note' => $tenantModel->stop_note,
+                    'admin' => $tenantModel->stoppedBy?->name ?? '—',
+                    'email' => $tenantModel->stoppedBy?->email ?? '—',
+                ]));
+            }
+
+            if (! app(\App\Services\TenantLicenseService::class)->isLicenseValid($tenantModel)) {
+                abort(403, __('menu.cafe_license_expired'));
+            }
         }
 
         if ($user->hasAnyRole(['waiter', 'kitchen'])) {
@@ -34,7 +51,11 @@ class EnsureCafeAccess
             return $next($request);
         }
 
-        if ($user->isSuperAdmin() || $user->managesCafePanel()) {
+        if ($user->isSuperAdmin() || ($user->canAccessPlatformPanel() && session('support_tenant_mode'))) {
+            return $next($request);
+        }
+
+        if ($user->managesCafePanel()) {
             return $next($request);
         }
 

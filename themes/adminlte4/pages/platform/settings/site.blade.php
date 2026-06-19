@@ -4,7 +4,7 @@
 @section('page-title', __('menu.site_management'))
 
 @section('content')
-<form method="POST" action="{{ route('platform.settings.site.update') }}">
+<form method="POST" action="{{ route('platform.settings.site.update') }}" enctype="multipart/form-data">
     @csrf @method('PUT')
 
     <div class="card">
@@ -195,6 +195,46 @@
                                @checked(old('oauth_allow_register', $settings['oauth_allow_register']))>
                         <label class="form-check-label" for="oauth_allow_register">{{ __('menu.oauth_allow_register') }}</label>
                     </div>
+                </div>
+            </div>
+            <hr>
+            <h6 class="mb-3">{{ __('menu.branding') }}</h6>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">{{ __('menu.site_logo') }}</label>
+                    <input type="file" name="site_logo" class="form-control" accept="image/*">
+                    @if($settings['site_logo_path'])<img src="{{ asset($settings['site_logo_path']) }}" class="mt-2" style="height:40px">@endif
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">{{ __('menu.site_favicon') }}</label>
+                    <input type="file" name="site_favicon" class="form-control" accept="image/*,.ico">
+                    @if($settings['site_favicon_path'])<img src="{{ asset($settings['site_favicon_path']) }}" class="mt-2" style="height:24px">@endif
+                </div>
+            </div>
+            <hr>
+            <h6 class="mb-3">{{ __('menu.default_company_info') }}</h6>
+            <div class="row">
+                <div class="col-md-6 mb-3"><label class="form-label">{{ __('menu.company_name') }}</label><input name="default_company_name" class="form-control" value="{{ old('default_company_name', $settings['default_company_name']) }}"></div>
+                <div class="col-md-6 mb-3"><label class="form-label">{{ __('menu.company_tax_number') }}</label><input name="default_company_tax_number" class="form-control" value="{{ old('default_company_tax_number', $settings['default_company_tax_number']) }}"></div>
+                <div class="col-md-6 mb-3"><label class="form-label">{{ __('menu.company_phone') }}</label><input name="default_company_phone" class="form-control" value="{{ old('default_company_phone', $settings['default_company_phone']) }}"></div>
+                <div class="col-md-6 mb-3"><label class="form-label">{{ __('menu.company_email') }}</label><input name="default_company_email" class="form-control" value="{{ old('default_company_email', $settings['default_company_email']) }}"></div>
+                <div class="col-12 mb-3"><label class="form-label">{{ __('menu.company_address') }}</label><textarea name="default_company_address" class="form-control" rows="2">{{ old('default_company_address', $settings['default_company_address']) }}</textarea></div>
+            </div>
+            <hr>
+            <h6 class="mb-3">{{ __('menu.email_verification_settings') }}</h6>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">{{ __('menu.verification_link_expires_minutes') }}</label>
+                    <input type="number" name="verification_link_expires_minutes" class="form-control" min="5" max="10080" value="{{ old('verification_link_expires_minutes', $settings['verification_link_expires_minutes']) }}">
+                </div>
+                <div class="col-md-8 mb-3">
+                    <label class="form-label">{{ __('menu.email_subject') }}</label>
+                    <input name="email_verification_subject" class="form-control" value="{{ old('email_verification_subject', $settings['email_verification_subject']) }}">
+                </div>
+                <div class="col-12 mb-3">
+                    <label class="form-label">{{ __('menu.email_body') }}</label>
+                    <textarea name="email_verification_body" class="form-control font-monospace" rows="14">{{ old('email_verification_body', $settings['email_verification_body']) }}</textarea>
+                    <div class="form-text">{{ __('menu.email_template_hint') }}</div>
                 </div>
             </div>
         </div>

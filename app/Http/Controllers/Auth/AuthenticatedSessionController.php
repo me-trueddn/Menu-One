@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Services\SupportSessionService;
 use App\Services\UserLoginTokenService;
+use App\Support\TenantAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -36,6 +38,11 @@ class AuthenticatedSessionController extends Controller
     {
         if ($user = $request->user()) {
             $this->loginTokens->revoke($user);
+
+            if (TenantAccess::isInSupportMode($user)) {
+                $tenantId = session('active_tenant_id');
+                app(SupportSessionService::class)->disconnect(is_string($tenantId) ? $tenantId : null);
+            }
         }
 
         Auth::guard('web')->logout();

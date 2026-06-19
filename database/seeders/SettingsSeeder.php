@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Setting;
+use App\Support\EmailVerificationTemplate;
 use App\Support\SecurityPolicy;
 use Illuminate\Database\Seeder;
 
@@ -51,6 +52,19 @@ class SettingsSeeder extends Seeder
 
         foreach ($security as $key => $value) {
             Setting::set($key, $value, 'security');
+        }
+
+        foreach ([
+            'verification_link_expires_minutes' => '1440',
+            'email_verification_subject' => EmailVerificationTemplate::subject(),
+            'email_verification_body' => EmailVerificationTemplate::body(),
+            'default_company_name' => '',
+            'default_company_tax_number' => '',
+            'default_company_phone' => '',
+            'default_company_email' => '',
+            'default_company_address' => '',
+        ] as $key => $value) {
+            Setting::set($key, $value, 'site');
         }
     }
 }

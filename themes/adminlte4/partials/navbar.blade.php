@@ -8,6 +8,16 @@
             </li>
         </ul>
         <ul class="navbar-nav ms-auto align-items-center gap-2">
+            @if(!empty($inSupportMode))
+                <li class="nav-item">
+                    <form method="POST" action="{{ route('platform.support.disconnect') }}" class="mb-0">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-warning">
+                            <i class="bi bi-box-arrow-left"></i> {{ __('menu.exit_support') }}
+                        </button>
+                    </form>
+                </li>
+            @endif
             @if(!empty($canSwitchTenants) && $canSwitchTenants)
                 <li class="nav-item">@include('theme::partials.tenant-switcher')</li>
             @endif

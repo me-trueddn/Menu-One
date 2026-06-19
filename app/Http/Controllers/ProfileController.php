@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\Tenant;
 use App\Services\PasswordLifecycleService;
+use App\Services\TenantLicenseService;
+use App\Support\CompanyDefaults;
 use App\Support\SecurityPolicy;
 use App\Support\TenantAccess;
 use App\Support\TenantIdGenerator;
@@ -17,7 +19,10 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
-    public function __construct(private PasswordLifecycleService $passwordLifecycle) {}
+    public function __construct(
+        private PasswordLifecycleService $passwordLifecycle,
+        private TenantLicenseService $licenses,
+    ) {}
 
     public function edit(Request $request): View
     {
@@ -38,6 +43,7 @@ class ProfileController extends Controller
             'tab' => $tab,
             'hasCafeLinks' => $hasCafeLinks,
             'canCreateCafe' => $canCreateCafe,
+            'companyDefaults' => CompanyDefaults::all(),
         ]);
     }
 
@@ -105,15 +111,32 @@ class ProfileController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', 'alpha_dash', 'unique:tenants,slug'],
+            'company_name' => ['nullable', 'string', 'max:255'],
+            'company_tax_number' => ['nullable', 'string', 'max:50'],
+            'company_phone' => ['nullable', 'string', 'max:30'],
+            'company_email' => ['nullable', 'email', 'max:255'],
+            'company_address' => ['nullable', 'string', 'max:1000'],
+            'logo' => ['nullable', 'image', 'max:2048'],
         ]);
 
         $tenant = Tenant::create([
             'id' => TenantIdGenerator::generate(),
             'name' => $validated['name'],
             'slug' => $validated['slug'],
+            'company_name' => $validated['company_name'] ?? null,
+            'company_tax_number' => $validated['company_tax_number'] ?? null,
+            'company_phone' => $validated['company_phone'] ?? null,
+            'company_email' => $validated['company_email'] ?? null,
+            'company_address' => $validated['company_address'] ?? null,
             'is_active' => true,
             'owner_user_id' => $user->id,
         ]);
+
+        if ($request->hasFile('logo')) {
+            $tenant->update(['logo_path' => $request->file('logo')->store('tenant-logos', 'public')]);
+        }
+
+        $this->licenses->assignDefault($tenant);
 
         $user->update(['tenant_id' => $tenant->id]);
         $user->assignedTenants()->syncWithoutDetaching([$tenant->id]);

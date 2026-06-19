@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-use Stancl\Tenancy\Facades\Tenancy;
 
 abstract class Controller
 {
@@ -21,7 +20,7 @@ abstract class Controller
 
     protected function tenantId(): string
     {
-        if (Tenancy::initialized) {
+        if (tenancy()->initialized) {
             return (string) tenant()->getTenantKey();
         }
 

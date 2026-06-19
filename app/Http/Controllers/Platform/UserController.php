@@ -129,6 +129,9 @@ class UserController extends Controller
         SuperAdminGuard::abortIfProtected($user);
         abort_if($user->id === $this->authUser()->id, 403);
 
+        $user->assignedTenants()->detach();
+        $user->loginToken()?->delete();
+        $user->syncRoles([]);
         $user->delete();
 
         return redirect()
