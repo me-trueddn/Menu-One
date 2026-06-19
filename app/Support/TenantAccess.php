@@ -66,6 +66,29 @@ class TenantAccess
         return self::selectableTenants($user)->count() > 1;
     }
 
+    public static function isCustomerTenantSelection(User $user): bool
+    {
+        if (! $user->isCustomer()) {
+            return false;
+        }
+
+        if ($user->isSuperAdmin() || $user->canAccessPlatformPanel() || $user->hasRole('platform_admin')) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public static function canSwitchTenants(User $user): bool
+    {
+        return self::isCustomerTenantSelection($user) && self::hasMultipleTenants($user);
+    }
+
+    public static function shouldPromptTenantSelection(User $user): bool
+    {
+        return self::canSwitchTenants($user) && ! session('active_tenant_id');
+    }
+
     public static function activeTenant(User $user): ?Tenant
     {
         $tenantId = self::resolveActiveTenantId($user);

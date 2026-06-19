@@ -1,0 +1,42 @@
+---
+description: Auto-bump project version after code changes
+alwaysApply: true
+---
+
+# Version & Build Policy
+
+This project uses `version.json` for semver-style versioning (`major.minor.patch`, minor is always `0`).
+
+## After every code change session
+
+When you finish implementing changes (files edited), run:
+
+```bash
+php artisan version:bump
+```
+
+This increments patch: `1.0.1` → `1.0.2` → `1.0.3` …
+
+## When the user says "Build al" or requests a build
+
+Run:
+
+```bash
+php artisan version:build
+```
+
+Output format: `Build N - X.0.Y` (example: `Build 1 - 1.0.10`, `Build 2 - 2.0.1`).
+
+Then show the user the build label and next dev version from command output.
+
+## Useful commands
+
+- `php artisan version:show` — current version + build history
+- `php artisan version:bump` — dev patch increment
+- `php artisan version:build` — release build
+
+## Rules
+
+- Do not edit `version.json` manually unless fixing corruption.
+- Commit `version.json` with related code changes.
+- Footer displays `v{version}` and `Build {n}` when builds exist.

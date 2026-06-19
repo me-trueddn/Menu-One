@@ -12,7 +12,16 @@ class TenantSwitchController extends Controller
     public function index(): View|RedirectResponse
     {
         $user = $this->authUser();
+
+        if (! TenantAccess::isCustomerTenantSelection($user)) {
+            return redirect()->route('home');
+        }
+
         $tenants = TenantAccess::selectableTenants($user);
+
+        if ($tenants->isEmpty()) {
+            return redirect()->route('profile.edit');
+        }
 
         if ($tenants->count() === 1) {
             TenantAccess::setActiveTenant($user, (string) $tenants->first()->id);
@@ -20,21 +29,21 @@ class TenantSwitchController extends Controller
             return redirect()->route('admin.dashboard');
         }
 
-        if ($tenants->isEmpty()) {
-            return redirect()->route('profile.edit');
-        }
-
         return view('theme::pages.tenant.select', compact('tenants'));
     }
 
     public function store(Request $request): RedirectResponse
     {
+        $user = $this->authUser();
+
+        abort_unless(TenantAccess::isCustomerTenantSelection($user), 403);
+
         $validated = $request->validate([
             'tenant_id' => ['required', 'string', 'exists:tenants,id'],
             'redirect' => ['nullable', 'string'],
         ]);
 
-        TenantAccess::setActiveTenant($this->authUser(), $validated['tenant_id']);
+        TenantAccess::setActiveTenant($user, $validated['tenant_id']);
 
         $redirect = $validated['redirect'] ?? null;
 
@@ -42,7 +51,7 @@ class TenantSwitchController extends Controller
             return redirect()->to($redirect)->with('success', __('menu.tenant_switched'));
         }
 
-        if ($this->authUser()->managesCafePanel()) {
+        if ($user->linkedTenants()->isNotEmpty()) {
             return redirect()->route('admin.dashboard')->with('success', __('menu.tenant_switched'));
         }
 

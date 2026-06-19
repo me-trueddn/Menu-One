@@ -76,6 +76,32 @@ class TenantSwitchTest extends TestCase
         $selectable = TenantAccess::selectableTenants($user->fresh());
 
         $this->assertCount(2, $selectable);
-        $this->assertTrue(TenantAccess::hasMultipleTenants($user->fresh()));
+        $this->assertTrue(TenantAccess::canSwitchTenants($user->fresh()));
+    }
+
+    public function test_platform_admin_is_not_prompted_for_tenant_selection(): void
+    {
+        Role::firstOrCreate(['name' => 'platform_admin', 'guard_name' => 'web']);
+
+        $tenant = Tenant::create([
+            'id' => '400-005',
+            'name' => 'Cafe X',
+            'slug' => 'cafe-x',
+            'is_active' => true,
+        ]);
+
+        $admin = User::factory()->create([
+            'tenant_id' => null,
+            'is_super_admin' => true,
+        ]);
+        $admin->assignRole('platform_admin');
+        $admin->assignedTenants()->attach($tenant->id);
+
+        $this->assertFalse(TenantAccess::canSwitchTenants($admin));
+        $this->assertFalse(TenantAccess::shouldPromptTenantSelection($admin));
+
+        $this->actingAs($admin)
+            ->get(route('tenant.select'))
+            ->assertRedirect(route('home'));
     }
 }

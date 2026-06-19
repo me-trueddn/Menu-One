@@ -107,7 +107,7 @@
                     </form>
                 </div>
 
-                @if($user->linkedTenants()->isNotEmpty())
+                @if($user->isCustomer() && $user->linkedTenants()->isNotEmpty())
                     <div class="col-12"><hr class="my-0"></div>
                     <div class="col-12">
                         <h6 class="fw-semibold">{{ __('menu.my_cafes') }}</h6>
@@ -122,7 +122,7 @@
                                             <span class="badge text-bg-primary ms-1">{{ __('menu.active_cafe') }}</span>
                                         @endif
                                     </div>
-                                    @if(($activeTenantId ?? null) !== $linkedTenant->id)
+                                    @if(!empty($canSwitchTenants) && $canSwitchTenants && ($activeTenantId ?? null) !== $linkedTenant->id)
                                         <form method="POST" action="{{ route('tenant.select.store') }}">
                                             @csrf
                                             <input type="hidden" name="tenant_id" value="{{ $linkedTenant->id }}">
@@ -133,7 +133,7 @@
                                 </li>
                             @endforeach
                         </ul>
-                        @if($user->linkedTenants()->count() > 1 && $user->managesCafePanel())
+                        @if(!empty($canSwitchTenants) && $canSwitchTenants)
                             <a href="{{ route('admin.dashboard') }}" class="btn btn-sm btn-primary mt-3">{{ __('menu.go_to_cafe_panel') }}</a>
                         @endif
                     </div>

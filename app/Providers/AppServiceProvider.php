@@ -7,6 +7,7 @@ use App\Models\OrderItem;
 use App\Models\Setting;
 use App\Models\User;
 use App\Support\TenantAccess;
+use App\Support\VersionManager;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
@@ -40,7 +41,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('selectableTenants', TenantAccess::selectableTenants($user));
                 $view->with('activeTenantId', TenantAccess::resolveActiveTenantId($user));
                 $view->with('activeTenant', TenantAccess::activeTenant($user));
-                $view->with('canSwitchTenants', TenantAccess::hasMultipleTenants($user));
+                $view->with('canSwitchTenants', TenantAccess::canSwitchTenants($user));
             }
         });
 
@@ -52,6 +53,19 @@ class AppServiceProvider extends ServiceProvider
 
         $this->applyMailSettingsFromDatabase();
         $this->registerSocialiteProviders();
+        $this->applyAppVersion();
+    }
+
+    protected function applyAppVersion(): void
+    {
+        try {
+            $versions = new VersionManager(config('version.file'));
+            Config::set('app.version', $versions->current());
+            Config::set('app.build', $versions->buildNumber());
+        } catch (\Throwable) {
+            Config::set('app.version', '1.0.0');
+            Config::set('app.build', 0);
+        }
     }
 
     protected function registerSocialiteProviders(): void

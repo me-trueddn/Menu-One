@@ -17,26 +17,10 @@ class HomeController extends Controller
             return redirect()->route('login');
         }
 
-        if ($user->hasRole('platform_admin') || $user->canAccessPlatformPanel()) {
-            if ($user->managesCafePanel() && (TenantAccess::selectableTenants($user)->isNotEmpty() || $user->isSuperAdmin())) {
-                $redirect = $this->resolveCafePanelRedirect($user);
-
-                if ($redirect) {
-                    return $redirect;
-                }
-            }
-
+        if ($user->isSuperAdmin() || $user->hasRole('platform_admin') || $user->canAccessPlatformPanel()) {
             $route = PlatformModules::firstAccessibleRoute($user);
 
             return redirect()->route($route ?? 'profile.edit');
-        }
-
-        if ($user->hasRole('cafe_admin') || ($user->hasRole('user') && $user->linkedTenants()->isNotEmpty())) {
-            $redirect = $this->resolveCafePanelRedirect($user);
-
-            if ($redirect) {
-                return $redirect;
-            }
         }
 
         if ($user->hasRole('cafe_admin')) {
@@ -51,37 +35,24 @@ class HomeController extends Controller
             return redirect()->route('kitchen.index');
         }
 
-        if ($user->hasRole('user')) {
+        if ($user->isCustomer()) {
+            if (TenantAccess::shouldPromptTenantSelection($user)) {
+                return redirect()->route('tenant.select');
+            }
+
+            if ($user->linkedTenants()->isNotEmpty()) {
+                $activeId = TenantAccess::resolveActiveTenantId($user);
+
+                if ($activeId) {
+                    TenantAccess::setActiveTenant($user, $activeId);
+
+                    return redirect()->route('admin.dashboard');
+                }
+            }
+
             return redirect()->route('profile.edit');
         }
 
         return redirect()->route('login');
-    }
-
-    private function resolveCafePanelRedirect($user): ?RedirectResponse
-    {
-        $tenants = TenantAccess::selectableTenants($user);
-
-        if ($tenants->isEmpty()) {
-            return null;
-        }
-
-        if ($tenants->count() > 1 && ! session('active_tenant_id')) {
-            return redirect()->route('tenant.select');
-        }
-
-        $activeId = TenantAccess::resolveActiveTenantId($user);
-
-        if ($activeId) {
-            TenantAccess::setActiveTenant($user, $activeId);
-
-            return redirect()->route('admin.dashboard');
-        }
-
-        if ($tenants->count() > 1) {
-            return redirect()->route('tenant.select');
-        }
-
-        return null;
     }
 }
