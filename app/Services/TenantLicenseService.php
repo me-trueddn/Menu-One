@@ -44,4 +44,24 @@ class TenantLicenseService
 
         return $license !== null && $license->isValid();
     }
+
+    public function isPremiumLicensed(Tenant $tenant): bool
+    {
+        $license = $this->currentLicense($tenant);
+
+        if ($license === null) {
+            return false;
+        }
+
+        $license->loadMissing('licenseType');
+
+        return $license->licenseType !== null && ! $license->licenseType->is_default;
+    }
+
+    public function subscriptionLabelFor(Tenant $tenant): string
+    {
+        return $this->isPremiumLicensed($tenant)
+            ? __('menu.account_type_premium')
+            : __('menu.account_type_free');
+    }
 }

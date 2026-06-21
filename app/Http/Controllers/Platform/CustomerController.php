@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
+use App\Models\EmailVerificationToken;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\MailConfigService;
@@ -31,7 +32,11 @@ class CustomerController extends Controller
 
         $query = User::query()
             ->customers()
-            ->with(['assignedTenants', 'tenant', 'ownedTenants']);
+            ->with([
+                'assignedTenants.currentLicense.licenseType',
+                'tenant.currentLicense.licenseType',
+                'ownedTenants.currentLicense.licenseType',
+            ]);
 
         if ($search = trim((string) $request->query('q'))) {
             $query->where(function ($builder) use ($searchField, $search) {
@@ -119,6 +124,26 @@ class CustomerController extends Controller
         $customer->update(['two_factor_enabled' => ! $customer->two_factor_enabled]);
 
         return back()->with('success', __('menu.messages.updated'));
+    }
+
+    public function toggleEmailVerification(User $customer): RedirectResponse
+    {
+        abort_unless($customer->isCustomer(), 404);
+
+        if ($customer->hasVerifiedEmail()) {
+            $customer->update(['email_verified_at' => null]);
+
+            return back()->with('success', __('menu.email_unverified_manual'));
+        }
+
+        $customer->update(['email_verified_at' => now()]);
+
+        EmailVerificationToken::query()
+            ->where('user_id', $customer->id)
+            ->whereNull('used_at')
+            ->update(['used_at' => now()]);
+
+        return back()->with('success', __('menu.email_verified_manual'));
     }
 
     public function changeEmail(Request $request, User $customer): RedirectResponse

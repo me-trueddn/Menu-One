@@ -35,6 +35,7 @@ class User extends Authenticatable
         'is_active',
         'is_super_admin',
         'two_factor_enabled',
+        'unlicensed_cafe_deleted_at',
     ];
 
     protected $hidden = [
@@ -51,7 +52,25 @@ class User extends Authenticatable
             'is_active' => 'boolean',
             'is_super_admin' => 'boolean',
             'two_factor_enabled' => 'boolean',
+            'unlicensed_cafe_deleted_at' => 'datetime',
         ];
+    }
+
+    public function hasPremiumLicensedCafe(): bool
+    {
+        return $this->linkedTenants()->contains(fn (Tenant $tenant) => $tenant->isPremiumLicensed());
+    }
+
+    public function accountSubscriptionLabel(): string
+    {
+        return $this->hasPremiumLicensedCafe()
+            ? __('menu.account_type_premium')
+            : __('menu.account_type_free');
+    }
+
+    public function accountSubscriptionBadgeClass(): string
+    {
+        return $this->hasPremiumLicensedCafe() ? 'text-bg-warning' : 'text-bg-info';
     }
 
     protected static function booted(): void
@@ -175,7 +194,7 @@ class User extends Authenticatable
         }
 
         if ($this->tenant_id !== null) {
-            return $this->hasAnyRole(['cafe_admin', 'waiter', 'kitchen']);
+            return $this->hasAnyRole(['cafe_admin', 'waiter', 'kitchen', 'cashier']);
         }
 
         return $this->assignedTenants()->exists() && (
@@ -241,5 +260,34 @@ class User extends Authenticatable
     public function canAccessPlatformPanel(): bool
     {
         return PlatformModules::userCanAnyModule($this);
+    }
+
+    public function defaultRoute(): string
+    {
+        if ($this->isSuperAdmin() || $this->hasRole('platform_admin') || $this->canAccessPlatformPanel()) {
+            return PlatformModules::firstAccessibleRoute($this) ?? 'profile.edit';
+        }
+
+        if ($this->hasRole('cafe_admin')) {
+            return 'admin.dashboard';
+        }
+
+        if ($this->hasRole('waiter')) {
+            return 'waiter.tables.index';
+        }
+
+        if ($this->hasRole('cashier')) {
+            return 'cashier.tables.index';
+        }
+
+        if ($this->hasRole('kitchen')) {
+            return 'kitchen.index';
+        }
+
+        if ($this->isCustomer()) {
+            return 'profile.edit';
+        }
+
+        return 'login';
     }
 }

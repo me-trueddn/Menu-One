@@ -3,6 +3,8 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use App\Models\UserLoginToken;
+use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -49,6 +51,29 @@ class AuthenticationTest extends TestCase
         $response = $this->actingAs($user)->post('/logout');
 
         $this->assertGuest();
-        $response->assertRedirect('/');
+        $response->assertRedirect(route('login', absolute: false));
+    }
+
+    public function test_idle_session_redirects_to_login(): void
+    {
+        Setting::set('security_session_idle_minutes', '30', 'security');
+
+        $user = User::factory()->create();
+        $plainToken = str_repeat('a', 64);
+
+        UserLoginToken::create([
+            'user_id' => $user->id,
+            'token_hash' => hash('sha256', $plainToken),
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'PHPUnit',
+            'last_used_at' => now()->subMinutes(31),
+        ]);
+
+        $response = $this->actingAs($user)
+            ->withSession(['user_access_token' => $plainToken])
+            ->get(route('dashboard'));
+
+        $response->assertRedirect(route('login', absolute: false));
+        $response->assertSessionHas('error');
     }
 }

@@ -86,16 +86,26 @@
                 <div class="col-md-4 mb-3">
                     <label class="form-label">{{ __('menu.captcha_site_key') }}</label>
                     <input name="captcha_site_key" class="form-control @error('captcha_site_key') is-invalid @enderror"
-                           value="{{ old('captcha_site_key', $settings['captcha_site_key']) }}">
+                           value="{{ old('captcha_site_key') }}"
+                           placeholder="{{ $settings['has_captcha_site_key'] ? $settings['captcha_site_key_masked'] : '' }}"
+                           autocomplete="off">
                     @error('captcha_site_key')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    @if($settings['has_captcha_site_key'])
+                        <div class="form-text">{{ __('menu.secret_configured', ['value' => $settings['captcha_site_key_masked']]) }}</div>
+                    @else
+                        <div class="form-text text-muted">{{ __('menu.secret_not_configured') }}</div>
+                    @endif
                 </div>
                 <div class="col-md-4 mb-3">
                     <label class="form-label">{{ __('menu.captcha_secret_key') }}</label>
                     <input type="password" name="captcha_secret_key" class="form-control @error('captcha_secret_key') is-invalid @enderror"
-                           placeholder="{{ $settings['has_captcha_secret'] ? '••••••••' : '' }}" autocomplete="new-password">
+                           placeholder="{{ $settings['has_captcha_secret'] ? $settings['captcha_secret_key_masked'] : '' }}"
+                           autocomplete="new-password">
                     @error('captcha_secret_key')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     @if($settings['has_captcha_secret'])
-                        <div class="form-text">{{ __('menu.mail_password_hint') }}</div>
+                        <div class="form-text">{{ __('menu.secret_configured', ['value' => $settings['captcha_secret_key_masked']]) }}</div>
+                    @else
+                        <div class="form-text text-muted">{{ __('menu.secret_not_configured') }}</div>
                     @endif
                 </div>
             </div>

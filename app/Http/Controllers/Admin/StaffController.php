@@ -4,16 +4,21 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\CafeStaffService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
 class StaffController extends Controller
 {
+    public function __construct(private CafeStaffService $staff) {}
+
     public function index(): View
     {
-        $staff = User::where('tenant_id', $this->tenantId())
+        $staff = User::query()
+            ->where('tenant_id', $this->tenantId())
+            ->whereHas('roles', fn ($q) => $q->whereIn('name', CafeStaffService::assignableRoles()))
             ->orderBy('name')
             ->paginate(20);
 
@@ -22,35 +27,55 @@ class StaffController extends Controller
 
     public function create(): View
     {
-        return view('theme::pages.admin.staff.create');
+        return view('theme::pages.admin.staff.create', [
+            'roles' => CafeStaffService::assignableRoles(),
+        ]);
+    }
+
+    public function lookup(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        $user = $this->staff->findByEmail($validated['email']);
+
+        return response()->json($this->staff->lookupMessage($user));
     }
 
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255'],
-            'password' => ['required', 'string', 'min:8'],
-            'role' => ['required', 'in:cafe_admin,waiter,kitchen'],
+            'email' => ['required', 'email'],
+            'role' => ['required', 'in:'.implode(',', CafeStaffService::assignableRoles())],
         ]);
 
-        $user = User::create([
-            'tenant_id' => $this->tenantId(),
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-        ]);
+        $user = $this->staff->findByEmail($validated['email']);
 
-        $user->assignRole($validated['role']);
+        if (! $user) {
+            return back()->withInput()->withErrors([
+                'email' => __('menu.staff_user_not_found'),
+            ]);
+        }
 
-        return redirect()->route('admin.staff.index')->with('success', 'Personel eklendi.');
+        $tenant = tenant();
+        abort_unless($tenant, 403);
+
+        $this->staff->attach($tenant, $user, $validated['role']);
+
+        return redirect()
+            ->route('admin.staff.index')
+            ->with('success', __('menu.staff_attached'));
     }
 
     public function edit(User $staff): View
     {
         abort_unless($staff->tenant_id === $this->tenantId(), 403);
 
-        return view('theme::pages.admin.staff.edit', compact('staff'));
+        return view('theme::pages.admin.staff.edit', [
+            'staff' => $staff,
+            'roles' => CafeStaffService::assignableRoles(),
+        ]);
     }
 
     public function update(Request $request, User $staff): RedirectResponse
@@ -58,30 +83,28 @@ class StaffController extends Controller
         abort_unless($staff->tenant_id === $this->tenantId(), 403);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255'],
-            'password' => ['nullable', 'string', 'min:8'],
-            'role' => ['required', 'in:cafe_admin,waiter,kitchen'],
-        ]);
-
-        $staff->update([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            ...($validated['password'] ? ['password' => Hash::make($validated['password'])] : []),
+            'role' => ['required', 'in:'.implode(',', CafeStaffService::assignableRoles())],
         ]);
 
         $staff->syncRoles([$validated['role']]);
 
-        return redirect()->route('admin.staff.index')->with('success', 'Personel güncellendi.');
+        return redirect()
+            ->route('admin.staff.index')
+            ->with('success', __('menu.messages.updated'));
     }
 
     public function destroy(User $staff): RedirectResponse
     {
         abort_unless($staff->tenant_id === $this->tenantId(), 403);
-        abort_if($staff->id === $this->authUser()->id, 403, 'Kendi hesabınızı silemezsiniz.');
+        abort_if($staff->id === $this->authUser()->id, 403, __('menu.staff_cannot_remove_self'));
 
-        $staff->delete();
+        $tenant = tenant();
+        abort_unless($tenant, 403);
 
-        return redirect()->route('admin.staff.index')->with('success', 'Personel silindi.');
+        $this->staff->detach($tenant, $staff);
+
+        return redirect()
+            ->route('admin.staff.index')
+            ->with('success', __('menu.staff_removed'));
     }
 }

@@ -2,9 +2,12 @@
 
 namespace App\Models;
 
+use App\Enums\OrderStatus;
+use App\Enums\ReservationStatus;
 use App\Enums\TableStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class DiningTable extends Model
@@ -32,11 +35,63 @@ class DiningTable extends Model
         return $this->hasMany(Order::class, 'cafe_table_id');
     }
 
+    public function payableOrder(): HasOne
+    {
+        return $this->hasOne(Order::class, 'cafe_table_id')
+            ->whereIn('status', OrderStatus::payableValues())
+            ->latestOfMany();
+    }
+
     public function activeOrder(): ?Order
     {
-        return $this->orders()
-            ->whereIn('status', ['open', 'sent'])
-            ->latest()
-            ->first();
+        if ($this->relationLoaded('payableOrder')) {
+            return $this->payableOrder;
+        }
+
+        return $this->payableOrder()->first();
+    }
+
+    public function reservations(): HasMany
+    {
+        return $this->hasMany(TableReservation::class, 'cafe_table_id');
+    }
+
+    public function upcomingReservations(): HasMany
+    {
+        return $this->reservations()
+            ->where('status', ReservationStatus::Active)
+            ->where('ends_at', '>=', now())
+            ->orderBy('starts_at');
+    }
+
+    public function currentReservation(): ?TableReservation
+    {
+        if ($this->relationLoaded('upcomingReservations')) {
+            return $this->upcomingReservations->first(fn (TableReservation $r) => $r->isCurrent());
+        }
+
+        return $this->upcomingReservations()->get()->first(fn (TableReservation $r) => $r->isCurrent());
+    }
+
+    public function nextReservation(): ?TableReservation
+    {
+        if ($this->relationLoaded('upcomingReservations')) {
+            return $this->upcomingReservations->first();
+        }
+
+        return $this->upcomingReservations()->first();
+    }
+
+    public function displayStatus(): TableStatus
+    {
+        if ($this->activeOrder()) {
+            return TableStatus::Occupied;
+        }
+
+        if ($this->currentReservation()) {
+            return TableStatus::Reserved;
+        }
+
+        return $this->status;
     }
 }

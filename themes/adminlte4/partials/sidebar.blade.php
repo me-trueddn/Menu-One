@@ -61,6 +61,36 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a href="{{ route('admin.operations.index') }}" class="nav-link {{ request()->routeIs('admin.operations.*') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-activity"></i>
+                            <p>{{ __('menu.operations') }}</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('kitchen.index') }}" class="nav-link {{ request()->routeIs('kitchen.*') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-fire"></i>
+                            <p>{{ __('menu.kitchen') }}</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('cashier.tables.index') }}" class="nav-link {{ request()->routeIs('cashier.*') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-cash-coin"></i>
+                            <p>{{ __('menu.cashier') }}</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('reservations.index') }}" class="nav-link {{ request()->routeIs('reservations.*') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-calendar-check"></i>
+                            <p>{{ __('menu.reservations') }}</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('waiter.tables.index') }}" class="nav-link {{ request()->routeIs('waiter.*') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-cup-straw"></i>
+                            <p>{{ __('menu.waiter') }}</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a href="{{ route('admin.staff.index') }}" class="nav-link {{ request()->routeIs('admin.staff.*') ? 'active' : '' }}">
                             <i class="nav-icon bi bi-people"></i>
                             <p>{{ __('menu.staff') }}</p>
@@ -74,12 +104,34 @@
                     </li>
                 @endif
 
-                @if($currentUser->hasRole('waiter'))
+                @if($currentUser->hasRole('waiter') && ! $currentUser->hasRole('cashier'))
                     <li class="nav-header">{{ __('menu.waiter') }}</li>
                     <li class="nav-item">
                         <a href="{{ route('waiter.tables.index') }}" class="nav-link {{ request()->routeIs('waiter.tables.*') ? 'active' : '' }}">
                             <i class="nav-icon bi bi-grid-3x3"></i>
                             <p>{{ __('menu.tables') }}</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('reservations.index') }}" class="nav-link {{ request()->routeIs('reservations.*') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-calendar-check"></i>
+                            <p>{{ __('menu.reservations') }}</p>
+                        </a>
+                    </li>
+                @endif
+
+                @if($currentUser->hasRole('cashier'))
+                    <li class="nav-header">{{ __('menu.cashier') }}</li>
+                    <li class="nav-item">
+                        <a href="{{ route('cashier.tables.index') }}" class="nav-link {{ request()->routeIs('cashier.*') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-cash-coin"></i>
+                            <p>{{ __('menu.cashier_tables') }}</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('reservations.index') }}" class="nav-link {{ request()->routeIs('reservations.*') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-calendar-check"></i>
+                            <p>{{ __('menu.reservations') }}</p>
                         </a>
                     </li>
                 @endif

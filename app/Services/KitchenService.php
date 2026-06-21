@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\OrderItemStatus;
+use App\Enums\OrderStatus;
 use App\Models\OrderItem;
 use Illuminate\Support\Collection;
 
@@ -16,8 +17,19 @@ class KitchenService
                 OrderItemStatus::Pending,
                 OrderItemStatus::Preparing,
             ])
-            ->whereHas('order', fn ($q) => $q->whereIn('status', ['open', 'sent']))
+            ->whereHas('order', fn ($q) => $q->whereIn('status', OrderStatus::payableValues()))
             ->orderBy('created_at')
+            ->get();
+    }
+
+    public function readyItems(): Collection
+    {
+        return OrderItem::query()
+            ->with(['product', 'order.cafeTable'])
+            ->where('status', OrderItemStatus::Ready)
+            ->whereHas('order', fn ($q) => $q->whereIn('status', OrderStatus::payableValues()))
+            ->orderByDesc('updated_at')
+            ->limit(20)
             ->get();
     }
 

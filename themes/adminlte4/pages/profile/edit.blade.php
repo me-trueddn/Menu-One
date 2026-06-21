@@ -19,7 +19,7 @@
             </div>
             <div class="col-sm-auto text-sm-end">
                 <div class="small text-muted">{{ __('menu.account_type') }}</div>
-                <span class="badge text-bg-info">{{ __('menu.account_type_free') }}</span>
+                <span class="badge {{ $user->accountSubscriptionBadgeClass() }}">{{ $user->accountSubscriptionLabel() }}</span>
             </div>
         </div>
     </div>
@@ -44,6 +44,12 @@
                 <a class="nav-link {{ $tab === 'cafe' ? 'active' : '' }}"
                    href="{{ route('profile.edit', ['tab' => 'cafe']) }}">
                     <i class="bi bi-shop me-1"></i>{{ __('menu.create_cafe_tab') }}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ $tab === 'licensing' ? 'active' : '' }}"
+                   href="{{ route('profile.edit', ['tab' => 'licensing']) }}">
+                    <i class="bi bi-award me-1"></i>{{ __('menu.licensing_tab') }}
                 </a>
             </li>
         </ul>
@@ -97,7 +103,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">{{ __('menu.account_type') }}</label>
-                                <input type="text" class="form-control" value="{{ __('menu.account_type_free') }}" disabled>
+                                <input type="text" class="form-control" value="{{ $user->accountSubscriptionLabel() }}" disabled>
                             </div>
                         </div>
 
@@ -118,6 +124,9 @@
                                     <div>
                                         <strong>{{ $linkedTenant->name }}</strong>
                                         <code class="ms-2">{{ $linkedTenant->id }}</code>
+                                        <span class="badge {{ $linkedTenant->isPremiumLicensed() ? 'text-bg-warning' : 'text-bg-info' }} ms-1">
+                                            {{ $linkedTenant->subscriptionLabel() }}
+                                        </span>
                                         @if(($activeTenantId ?? null) === $linkedTenant->id)
                                             <span class="badge text-bg-primary ms-1">{{ __('menu.active_cafe') }}</span>
                                         @endif
@@ -260,6 +269,35 @@
         @endif
 
         @if($tab === 'cafe')
+            @if($ownedCafes->isNotEmpty())
+                <h6 class="fw-semibold">{{ __('menu.my_cafes') }}</h6>
+                <div class="list-group mb-4">
+                    @foreach($ownedCafes as $ownedCafe)
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                                <div>
+                                    <strong>{{ $ownedCafe->name }}</strong>
+                                    <code class="ms-2">{{ $ownedCafe->id }}</code>
+                                    @include('theme::partials.cafe-license-info', ['cafe' => $ownedCafe])
+                                </div>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <a href="{{ route('admin.dashboard') }}" class="btn btn-sm btn-outline-primary">{{ __('menu.go_to_cafe_panel') }}</a>
+                                    @if(! $ownedCafe->isPremiumLicensed())
+                                        <form method="POST" action="{{ route('profile.cafe.destroy', $ownedCafe) }}"
+                                              onsubmit="return confirm('{{ __('menu.confirm_delete_cafe') }}')">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">{{ __('menu.delete_cafe') }}</button>
+                                        </form>
+                                    @else
+                                        <span class="small text-muted align-self-center">{{ __('menu.premium_cafe_delete_blocked') }}</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
             @if($canCreateCafe)
                 <h6 class="fw-semibold">{{ __('menu.create_cafe') }}</h6>
                 <p class="text-muted small">{{ __('menu.create_cafe_hint') }}</p>
@@ -289,24 +327,43 @@
                         <button type="submit" class="btn btn-primary">{{ __('menu.create_cafe') }}</button>
                     </div>
                 </form>
+            @elseif($ownedCafes->isEmpty())
+                <div class="alert alert-warning mb-0">
+                    <h6 class="alert-heading">{{ __('menu.cafe_create_cooldown_title') }}</h6>
+                    <p class="mb-0">
+                        {{ __('menu.cafe_create_cooldown_hint', [
+                            'date' => $cafeCooldownEndsAt?->format('d.m.Y'),
+                            'days' => $daysUntilCanCreateCafe,
+                        ]) }}
+                    </p>
+                </div>
             @else
                 <div class="alert alert-info mb-0">
-                    <h6 class="alert-heading">{{ __('menu.cafe_already_exists') }}</h6>
-                    <p class="mb-2">{{ __('menu.cafe_already_exists_hint') }}</p>
-                    @if($user->tenant_id)
-                        <a href="{{ route('admin.dashboard') }}" class="btn btn-sm btn-primary">{{ __('menu.go_to_cafe_panel') }}</a>
-                    @endif
+                    <p class="mb-0">{{ __('menu.cafe_already_exists_hint') }}</p>
                 </div>
-                @if($user->assignedTenants->isNotEmpty())
-                    <ul class="list-group mt-3">
-                        @foreach($user->assignedTenants as $assignedTenant)
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>{{ $assignedTenant->name }} <code class="ms-1">{{ $assignedTenant->id }}</code></span>
-                            </li>
-                        @endforeach
-                    </ul>
-                @endif
             @endif
+
+            @if($user->assignedTenants->isNotEmpty())
+                <h6 class="fw-semibold mt-4">{{ __('menu.assigned_cafes') }}</h6>
+                <ul class="list-group">
+                    @foreach($user->assignedTenants as $assignedTenant)
+                        @continue($ownedCafes->contains('id', $assignedTenant->id))
+                        <li class="list-group-item">
+                            <strong>{{ $assignedTenant->name }}</strong>
+                            <code class="ms-2">{{ $assignedTenant->id }}</code>
+                            @include('theme::partials.cafe-license-info', ['cafe' => $assignedTenant])
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+        @endif
+
+        @if($tab === 'licensing')
+            <div class="text-center py-5">
+                <i class="bi bi-award display-4 text-muted"></i>
+                <h5 class="mt-3">{{ __('menu.licensing_tab') }}</h5>
+                <p class="text-muted mb-0">{{ __('menu.licensing_coming_soon') }}</p>
+            </div>
         @endif
     </div>
 </div>

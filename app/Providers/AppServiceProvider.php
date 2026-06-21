@@ -7,6 +7,7 @@ use App\Models\OrderItem;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\SupportSessionService;
+use App\Services\UserImpersonationService;
 use App\Support\TenantAccess;
 use App\Support\VersionManager;
 use Illuminate\Support\Facades\Auth;
@@ -46,6 +47,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('canSwitchTenants', TenantAccess::canSwitchTenants($user));
                 $view->with('inSupportMode', TenantAccess::isInSupportMode($user));
                 $view->with('activeSupportSession', app(SupportSessionService::class)->activeForTenant($activeTenantId));
+                $view->with('isImpersonating', app(UserImpersonationService::class)->isImpersonating());
             }
         });
 

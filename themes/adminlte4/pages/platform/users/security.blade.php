@@ -150,23 +150,30 @@
             <small class="text-muted">ISO 27001 · A.5.17 · 8.5</small>
         </div>
         <div class="card-body">
-            <div class="alert alert-info mb-3">{{ __('menu.two_factor_temp_disabled') }}</div>
+            <p class="text-muted small">{{ __('menu.two_factor_global_hint') }}</p>
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" name="security_2fa_required" value="1" disabled
-                               @checked(old('security_2fa_required', $settings['security_2fa_required'] ?? false))>
-                        <label class="form-check-label">{{ __('menu.two_factor_required') }}</label>
+                        <input class="form-check-input" type="checkbox" name="security_2fa_enabled_globally" value="1" id="security_2fa_enabled_globally"
+                               @checked(old('security_2fa_enabled_globally', $settings['security_2fa_enabled_globally'] ?? false))>
+                        <label class="form-check-label" for="security_2fa_enabled_globally">{{ __('menu.two_factor_global') }}</label>
                     </div>
+                    <div class="form-text">{{ __('menu.two_factor_global_desc') }}</div>
                 </div>
                 <div class="col-md-6 mb-3">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" name="security_2fa_enabled_globally" value="1" disabled
-                               @checked(old('security_2fa_enabled_globally', $settings['security_2fa_enabled_globally'] ?? false))>
-                        <label class="form-check-label">{{ __('menu.two_factor_global') }}</label>
-                    </div>
+                    @if($settings['security_2fa_required'] ?? false)
+                        <span class="badge text-bg-danger">{{ __('menu.two_factor_required_active') }}</span>
+                    @else
+                        <span class="badge text-bg-secondary">{{ __('menu.two_factor_required_inactive') }}</span>
+                    @endif
                 </div>
             </div>
+            <form method="POST" action="{{ route('platform.users.security.enforce-2fa') }}" class="mt-2" onsubmit="return confirm('{{ __('menu.two_factor_enforce_confirm') }}')">
+                @csrf
+                <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-shield-lock"></i> {{ __('menu.two_factor_enforce_button') }}
+                </button>
+            </form>
         </div>
     </div>
 

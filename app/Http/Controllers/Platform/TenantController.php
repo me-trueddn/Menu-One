@@ -68,7 +68,7 @@ class TenantController extends Controller
 
     public function edit(Tenant $tenant): View
     {
-        $tenant->load(['owner', 'stoppedBy', 'currentLicense.licenseType']);
+        $tenant->load(['owner', 'stoppedBy', 'currentLicense.licenseType', 'staffUsers.roles']);
 
         return view('theme::pages.platform.tenants.edit', [
             'tenant' => $tenant,

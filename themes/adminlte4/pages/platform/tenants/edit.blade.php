@@ -77,6 +77,8 @@
     </div>
 </div>
 
+@include('theme::partials.tenant-staff-panel', ['tenant' => $tenant])
+
 <div class="modal fade" id="stopCafeModal" tabindex="-1">
     <div class="modal-dialog">
         <form method="POST" action="{{ route('platform.tenants.stop', $tenant) }}" class="modal-content">

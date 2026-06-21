@@ -45,8 +45,10 @@
                     <th>{{ __('menu.full_name') }}</th>
                     <th>{{ __('menu.email') }}</th>
                     <th>{{ __('menu.phone') }}</th>
+                    <th>{{ __('menu.account_type') }}</th>
                     <th>{{ __('menu.tenant') }}</th>
                     <th>{{ __('menu.status') }}</th>
+                    <th>{{ __('menu.email_verification') }}</th>
                     <th>{{ __('menu.date') }}</th>
                     <th class="text-end">{{ __('menu.actions') }}</th>
                 </tr>
@@ -59,6 +61,11 @@
                         <td>{{ $customer->email }}</td>
                         <td>{{ $customer->phone ?? '—' }}</td>
                         <td>
+                            <span class="badge {{ $customer->accountSubscriptionBadgeClass() }}">
+                                {{ $customer->accountSubscriptionLabel() }}
+                            </span>
+                        </td>
+                        <td>
                             @if($customer->linkedTenants()->isEmpty())
                                 <span class="text-muted">{{ __('menu.no_tenant') }}</span>
                             @else
@@ -67,6 +74,9 @@
                                         <li class="mb-1">
                                             <span>{{ $linkedTenant->name }}</span>
                                             <code class="ms-1">{{ $linkedTenant->id }}</code>
+                                            <span class="badge {{ $linkedTenant->isPremiumLicensed() ? 'text-bg-warning' : 'text-bg-info' }} ms-1">
+                                                {{ $linkedTenant->subscriptionLabel() }}
+                                            </span>
                                             @if($customer->ownsTenant($linkedTenant))
                                                 <span class="badge text-bg-primary ms-1">{{ __('menu.tenant_owner') }}</span>
                                             @endif
@@ -80,10 +90,21 @@
                                 {{ $customer->is_active ? __('menu.active') : __('menu.inactive') }}
                             </span>
                         </td>
+                        <td>
+                            <span class="badge {{ $customer->hasVerifiedEmail() ? 'text-bg-success' : 'text-bg-warning' }}">
+                                {{ $customer->hasVerifiedEmail() ? __('menu.verified') : __('menu.unverified') }}
+                            </span>
+                        </td>
                         <td>{{ $customer->created_at?->format('d.m.Y H:i') }}</td>
                         <td class="text-end">
                             <div class="btn-group btn-group-sm flex-wrap justify-content-end">
                                 <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#resetPwd{{ $customer->id }}">{{ __('menu.reset_password') }}</button>
+                                <form action="{{ route('platform.customers.toggle-email-verification', $customer) }}" method="POST" class="d-inline">
+                                    @csrf
+                                    <button class="btn btn-outline-{{ $customer->hasVerifiedEmail() ? 'warning' : 'success' }}">
+                                        {{ $customer->hasVerifiedEmail() ? __('menu.revoke_verification') : __('menu.verify_email') }}
+                                    </button>
+                                </form>
                                 <form action="{{ route('platform.customers.toggle-2fa', $customer) }}" method="POST" class="d-inline">
                                     @csrf
                                     <button class="btn btn-outline-secondary" @disabled(!\App\Support\SecurityPolicy::bool('security_2fa_enabled_globally'))>
@@ -190,7 +211,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="8" class="text-center text-muted">{{ __('menu.no_data') }}</td></tr>
+                    <tr><td colspan="10" class="text-center text-muted">{{ __('menu.no_data') }}</td></tr>
                 @endforelse
             </tbody>
         </table>

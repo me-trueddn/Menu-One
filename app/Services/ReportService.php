@@ -24,7 +24,7 @@ class ReportService
     public function openOrderCount(): int
     {
         return Order::query()
-            ->whereIn('status', [OrderStatus::Open, OrderStatus::Sent])
+            ->whereIn('status', OrderStatus::payableValues())
             ->count();
     }
 

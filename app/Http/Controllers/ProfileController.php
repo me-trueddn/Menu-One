@@ -6,6 +6,7 @@ use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\Tenant;
 use App\Services\PasswordLifecycleService;
 use App\Services\TenantLicenseService;
+use App\Services\UserCafeService;
 use App\Support\CompanyDefaults;
 use App\Support\SecurityPolicy;
 use App\Support\TenantAccess;
@@ -22,13 +23,18 @@ class ProfileController extends Controller
     public function __construct(
         private PasswordLifecycleService $passwordLifecycle,
         private TenantLicenseService $licenses,
+        private UserCafeService $cafes,
     ) {}
 
     public function edit(Request $request): View
     {
-        $user = $request->user()->load(['assignedTenants', 'ownedTenants']);
+        $user = $request->user()->load([
+            'assignedTenants.currentLicense.licenseType',
+            'ownedTenants.currentLicense.licenseType',
+            'tenant.currentLicense.licenseType',
+        ]);
 
-        $tab = in_array($request->query('tab'), ['profile', 'security', 'cafe'], true)
+        $tab = in_array($request->query('tab'), ['profile', 'security', 'cafe', 'licensing'], true)
             ? $request->query('tab')
             : 'profile';
 
@@ -36,13 +42,18 @@ class ProfileController extends Controller
             || $user->assignedTenants->isNotEmpty()
             || $user->ownedTenants->isNotEmpty();
 
-        $canCreateCafe = $user->tenant_id === null && $user->ownedTenants->isEmpty();
+        $canCreateCafe = $this->cafes->canCreateCafe($user);
+        $cafeCooldownEndsAt = $this->cafes->cooldownEndsAt($user);
+        $daysUntilCanCreateCafe = $this->cafes->daysUntilCanCreateCafe($user);
 
         return view('theme::pages.profile.edit', [
             'user' => $user,
             'tab' => $tab,
             'hasCafeLinks' => $hasCafeLinks,
             'canCreateCafe' => $canCreateCafe,
+            'cafeCooldownEndsAt' => $cafeCooldownEndsAt,
+            'daysUntilCanCreateCafe' => $daysUntilCanCreateCafe,
+            'ownedCafes' => $user->ownedTenants,
             'companyDefaults' => CompanyDefaults::all(),
         ]);
     }
@@ -106,7 +117,7 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
-        abort_if($user->tenant_id !== null || $user->ownedTenants()->exists(), 403);
+        abort_unless($this->cafes->canCreateCafe($user), 403);
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -138,7 +149,7 @@ class ProfileController extends Controller
 
         $this->licenses->assignDefault($tenant);
 
-        $user->update(['tenant_id' => $tenant->id]);
+        $user->update(['tenant_id' => $tenant->id, 'unlicensed_cafe_deleted_at' => null]);
         $user->assignedTenants()->syncWithoutDetaching([$tenant->id]);
 
         if (! $user->hasRole('cafe_admin')) {
@@ -150,6 +161,25 @@ class ProfileController extends Controller
         return redirect()
             ->route('admin.dashboard')
             ->with('success', __('menu.cafe_created'));
+    }
+
+    public function destroyCafe(Tenant $tenant): RedirectResponse
+    {
+        $user = $this->authUser();
+
+        try {
+            $this->cafes->deleteUnlicensedCafe($user, $tenant);
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        if (session('active_tenant_id') === $tenant->id) {
+            session()->forget('active_tenant_id');
+        }
+
+        return redirect()
+            ->route('profile.edit', ['tab' => 'cafe'])
+            ->with('success', __('menu.cafe_deleted'));
     }
 
     public function destroy(Request $request): RedirectResponse

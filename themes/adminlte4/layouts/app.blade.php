@@ -4,6 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @auth
+    <meta name="login-url" content="{{ route('login') }}">
+    @endauth
     <title>@yield('title', config('app.name'))</title>
     <link rel="icon" href="{{ \App\Support\Branding::faviconUrl() }}">
     @vite(['resources/css/themes/adminlte4.css', 'resources/js/themes/adminlte4.js'])
@@ -11,6 +14,7 @@
 </head>
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
 @php($currentUser = auth()->user())
+@include('theme::partials.impersonation-banner')
 @include('theme::partials.support-banner')
 <div class="app-wrapper">
     @include('theme::partials.navbar')

@@ -3,21 +3,28 @@
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\DiningTableController as AdminDiningTableController;
+use App\Http\Controllers\Admin\OperationsController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Admin\StaffController as AdminStaffController;
+use App\Http\Controllers\Cashier\PaymentController as CashierPaymentController;
+use App\Http\Controllers\Cashier\TableController as CashierTableController;
 use App\Http\Controllers\HomeController;
-use App\Http\Controllers\TenantSwitchController;
+use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\Kitchen\KitchenController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Platform\CustomerController;
 use App\Http\Controllers\Platform\LicenseTypeController;
+use App\Http\Controllers\Platform\MailSettingsController;
 use App\Http\Controllers\Platform\SiteSettingsController;
 use App\Http\Controllers\Platform\TenantController;
+use App\Http\Controllers\Platform\TenantStaffController;
 use App\Http\Controllers\Platform\UserController;
 use App\Http\Controllers\Platform\UserGroupController;
 use App\Http\Controllers\Platform\UserSecuritySettingsController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReservationController;
+use App\Http\Controllers\TenantSwitchController;
 use App\Http\Controllers\Waiter\OrderController as WaiterOrderController;
 use App\Http\Controllers\Waiter\TableController as WaiterTableController;
 use Illuminate\Support\Facades\Route;
@@ -30,12 +37,14 @@ Route::get('/dashboard', HomeController::class)->middleware('auth')->name('dashb
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/home', HomeController::class)->name('home');
+    Route::post('/impersonation/leave', [ImpersonationController::class, 'leave'])->name('impersonation.leave');
     Route::get('/tenant/select', [TenantSwitchController::class, 'index'])->name('tenant.select');
     Route::post('/tenant/select', [TenantSwitchController::class, 'store'])->name('tenant.select.store');
 
     Route::middleware(['platform'])->prefix('platform')->name('platform.')->group(function () {
         Route::get('users/security', [UserSecuritySettingsController::class, 'edit'])->name('users.security');
         Route::put('users/security', [UserSecuritySettingsController::class, 'update'])->name('users.security.update');
+        Route::post('users/security/enforce-2fa', [UserSecuritySettingsController::class, 'enforceTwoFactor'])->name('users.security.enforce-2fa');
         Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
         Route::post('users/{user}/toggle-2fa', [UserController::class, 'toggleTwoFactor'])->name('users.toggle-2fa');
         Route::post('users/{user}/change-email', [UserController::class, 'changeEmail'])->name('users.change-email');
@@ -48,6 +57,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('customers/{customer}/send-reset-link', [CustomerController::class, 'sendResetLink'])->name('customers.send-reset-link');
         Route::post('customers/{customer}/reset-password', [CustomerController::class, 'resetPassword'])->name('customers.reset-password');
         Route::post('customers/{customer}/toggle-2fa', [CustomerController::class, 'toggleTwoFactor'])->name('customers.toggle-2fa');
+        Route::post('customers/{customer}/toggle-email-verification', [CustomerController::class, 'toggleEmailVerification'])->name('customers.toggle-email-verification');
         Route::post('customers/{customer}/change-email', [CustomerController::class, 'changeEmail'])->name('customers.change-email');
         Route::post('customers/{customer}/tenants', [CustomerController::class, 'attachTenant'])->name('customers.tenants.attach');
         Route::delete('customers/{customer}/tenants/{tenant}', [CustomerController::class, 'detachTenant'])->name('customers.tenants.detach');
@@ -62,6 +72,11 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('tenants', TenantController::class)->except(['show']);
         Route::post('tenants/{tenant}/connect', [TenantController::class, 'connect'])->name('tenants.connect');
         Route::post('support/disconnect', [TenantController::class, 'disconnectSupport'])->name('support.disconnect');
+        Route::post('tenants/{tenant}/staff/lookup', [TenantStaffController::class, 'lookup'])->name('tenants.staff.lookup');
+        Route::post('tenants/{tenant}/staff', [TenantStaffController::class, 'store'])->name('tenants.staff.store');
+        Route::put('tenants/{tenant}/staff/{user}', [TenantStaffController::class, 'update'])->name('tenants.staff.update');
+        Route::delete('tenants/{tenant}/staff/{user}', [TenantStaffController::class, 'destroy'])->name('tenants.staff.destroy');
+        Route::post('tenants/{tenant}/staff/{user}/impersonate', [TenantStaffController::class, 'impersonate'])->name('tenants.staff.impersonate');
         Route::post('tenants/{tenant}/stop', [TenantController::class, 'stop'])->name('tenants.stop');
         Route::post('tenants/{tenant}/resume', [TenantController::class, 'resume'])->name('tenants.resume');
         Route::resource('licenses', LicenseTypeController::class)->except(['show']);
@@ -69,6 +84,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware(['tenant', 'cafe'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', AdminDashboardController::class)->name('dashboard');
+        Route::get('/operations', [OperationsController::class, 'index'])->name('operations.index');
+        Route::post('staff/lookup', [AdminStaffController::class, 'lookup'])->name('staff.lookup');
         Route::resource('tables', AdminDiningTableController::class)->except(['show']);
         Route::resource('categories', AdminCategoryController::class)->except(['show']);
         Route::resource('products', AdminProductController::class)->except(['show']);
@@ -76,12 +93,30 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/reports', [AdminReportController::class, 'index'])->name('reports.index');
     });
 
-    Route::middleware(['tenant', 'role:waiter'])->prefix('waiter')->name('waiter.')->group(function () {
+    Route::middleware(['tenant', 'role:waiter,cashier,cafe_admin'])->prefix('reservations')->name('reservations.')->group(function () {
+        Route::get('/', [ReservationController::class, 'index'])->name('index');
+        Route::get('/create', [ReservationController::class, 'create'])->name('create');
+        Route::post('/', [ReservationController::class, 'store'])->name('store');
+        Route::get('/{reservation}/edit', [ReservationController::class, 'edit'])->name('edit');
+        Route::put('/{reservation}', [ReservationController::class, 'update'])->name('update');
+        Route::post('/{reservation}/complete', [ReservationController::class, 'complete'])->name('complete');
+        Route::delete('/{reservation}', [ReservationController::class, 'destroy'])->name('destroy');
+    });
+
+    Route::middleware(['tenant', 'role:cashier,cafe_admin'])->prefix('cashier')->name('cashier.')->group(function () {
+        Route::get('/tables', [CashierTableController::class, 'index'])->name('tables.index');
+        Route::get('/tables/{table}', [CashierTableController::class, 'show'])->name('tables.show');
+        Route::post('/orders/{order}/pay', [CashierPaymentController::class, 'store'])->name('orders.pay');
+    });
+
+    Route::middleware(['tenant', 'role:waiter,cashier'])->prefix('waiter')->name('waiter.')->group(function () {
         Route::get('/tables', [WaiterTableController::class, 'index'])->name('tables.index');
         Route::get('/tables/{table}', [WaiterTableController::class, 'show'])->name('tables.show');
         Route::post('/tables/{table}/orders', [WaiterOrderController::class, 'create'])->name('orders.create');
         Route::post('/orders/{order}/items', [WaiterOrderController::class, 'storeItem'])->name('orders.items.store');
+        Route::delete('/orders/{order}/items/{item}', [WaiterOrderController::class, 'removeItem'])->name('orders.items.destroy');
         Route::post('/orders/{order}/send', [WaiterOrderController::class, 'sendToKitchen'])->name('orders.send');
+        Route::post('/orders/{order}/request-payment', [WaiterOrderController::class, 'requestPayment'])->name('orders.request-payment');
         Route::post('/orders/{order}/close', [WaiterOrderController::class, 'close'])->name('orders.close');
         Route::post('/orders/{order}/items/{item}/served', [WaiterOrderController::class, 'markServed'])->name('orders.items.served');
         Route::get('/ready-items/poll', [WaiterOrderController::class, 'pollReadyItems'])->name('ready-items.poll');
@@ -98,6 +133,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/profile/email', [ProfileController::class, 'changeEmail'])->name('profile.change-email');
     Route::post('/profile/toggle-2fa', [ProfileController::class, 'toggleTwoFactor'])->name('profile.toggle-2fa');
     Route::post('/profile/cafe', [ProfileController::class, 'storeCafe'])->name('profile.cafe.store');
+    Route::delete('/profile/cafe/{tenant}', [ProfileController::class, 'destroyCafe'])->name('profile.cafe.destroy');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 

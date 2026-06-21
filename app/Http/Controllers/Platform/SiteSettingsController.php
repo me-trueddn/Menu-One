@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Support\CaptchaPolicy;
 use App\Support\OAuthPolicy;
+use App\Support\SecretMask;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
@@ -27,6 +28,9 @@ class SiteSettingsController extends Controller
             'default_locale' => Setting::get('default_locale', config('site.default_locale')),
             'captcha_provider' => Setting::get('captcha_provider', $defaults['captcha_provider']),
             'captcha_site_key' => Setting::get('captcha_site_key', ''),
+            'captcha_site_key_masked' => SecretMask::mask(Setting::get('captcha_site_key', '')),
+            'captcha_secret_key_masked' => SecretMask::mask(CaptchaPolicy::secretKey()),
+            'has_captcha_site_key' => (bool) Setting::get('captcha_site_key'),
             'captcha_login_enabled' => CaptchaPolicy::bool('captcha_login_enabled'),
             'captcha_register_enabled' => CaptchaPolicy::bool('captcha_register_enabled'),
             'captcha_password_reset_enabled' => CaptchaPolicy::bool('captcha_password_reset_enabled'),
@@ -93,7 +97,6 @@ class SiteSettingsController extends Controller
             'support_email' => $validated['support_email'] ?? '',
             'default_locale' => $validated['default_locale'],
             'captcha_provider' => $validated['captcha_provider'],
-            'captcha_site_key' => $validated['captcha_site_key'] ?? '',
             'captcha_login_enabled' => $request->boolean('captcha_login_enabled') ? '1' : '0',
             'captcha_register_enabled' => $request->boolean('captcha_register_enabled') ? '1' : '0',
             'captcha_password_reset_enabled' => $request->boolean('captcha_password_reset_enabled') ? '1' : '0',
@@ -113,6 +116,10 @@ class SiteSettingsController extends Controller
             'default_company_email' => $validated['default_company_email'] ?? '',
             'default_company_address' => $validated['default_company_address'] ?? '',
         ];
+
+        if (! empty($validated['captcha_site_key'])) {
+            $pairs['captcha_site_key'] = $validated['captcha_site_key'];
+        }
 
         if (! empty($validated['captcha_secret_key'])) {
             $pairs['captcha_secret_key'] = Crypt::encryptString($validated['captcha_secret_key']);

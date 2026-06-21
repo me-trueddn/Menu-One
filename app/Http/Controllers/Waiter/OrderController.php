@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Waiter;
 
 use App\Enums\OrderItemStatus;
+use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\DiningTable;
@@ -43,6 +44,19 @@ class OrderController extends Controller
         return back()->with('success', 'Ürün adisyona eklendi.');
     }
 
+    public function removeItem(Order $order, OrderItem $item): RedirectResponse
+    {
+        abort_unless($item->order_id === $order->id, 404);
+
+        try {
+            $this->orders->removeItem($order, $item);
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', __('menu.item_removed'));
+    }
+
     public function sendToKitchen(Order $order): RedirectResponse
     {
         $this->orders->sendToKitchen($order);
@@ -50,20 +64,37 @@ class OrderController extends Controller
         return back()->with('success', 'Sipariş mutfağa gönderildi.');
     }
 
-    public function close(Order $order): RedirectResponse
+    public function requestPayment(Order $order): RedirectResponse
     {
-        $table = $order->cafeTable;
-        $this->orders->closeOrder($order);
+        try {
+            $this->orders->requestPayment($order);
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
         return redirect()
             ->route('waiter.tables.index')
-            ->with('success', 'Adisyon kapatıldı.');
+            ->with('success', __('menu.bill_sent_to_cashier'));
     }
 
-    public function markServed(Order $order, int $item): RedirectResponse
+    public function close(Order $order): RedirectResponse
     {
-        $orderItem = $order->items()->findOrFail($item);
-        $orderItem->update(['status' => OrderItemStatus::Served]);
+        try {
+            $this->orders->requestPayment($order);
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('waiter.tables.index')
+            ->with('success', __('menu.bill_sent_to_cashier'));
+    }
+
+    public function markServed(Order $order, OrderItem $item): RedirectResponse
+    {
+        abort_unless($item->order_id === $order->id, 404);
+
+        $item->update(['status' => OrderItemStatus::Served]);
 
         return back()->with('success', 'Ürün servis edildi olarak işaretlendi.');
     }
@@ -80,7 +111,7 @@ class OrderController extends Controller
         $items = OrderItem::query()
             ->with(['product', 'order.cafeTable'])
             ->where('status', OrderItemStatus::Ready)
-            ->whereHas('order', fn ($q) => $q->whereIn('status', ['open', 'sent']))
+            ->whereHas('order', fn ($q) => $q->whereIn('status', OrderStatus::payableValues()))
             ->get()
             ->map(fn ($item) => [
                 'id' => $item->id,

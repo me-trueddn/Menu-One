@@ -18,6 +18,9 @@ class Order extends Model
         'user_id',
         'status',
         'total',
+        'payment_method',
+        'split_count',
+        'closed_at',
     ];
 
     protected function casts(): array
@@ -25,6 +28,8 @@ class Order extends Model
         return [
             'status' => OrderStatus::class,
             'total' => 'decimal:2',
+            'split_count' => 'integer',
+            'closed_at' => 'datetime',
         ];
     }
 
@@ -50,5 +55,17 @@ class Order extends Model
             ->value('aggregate');
 
         $this->update(['total' => $total ?? 0]);
+    }
+
+    public function perPersonTotal(): float
+    {
+        $total = (float) $this->total;
+        $split = (int) $this->split_count;
+
+        if ($split <= 0) {
+            return round($total, 2);
+        }
+
+        return round($total / $split, 2);
     }
 }

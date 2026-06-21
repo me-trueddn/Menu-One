@@ -34,9 +34,7 @@ class ValidateUserLoginToken
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            return redirect()->route('login')->withErrors([
-                'email' => __('menu.session_invalid'),
-            ]);
+            return redirect()->route('login')->with('error', __('menu.session_invalid'));
         }
 
         return $next($request);

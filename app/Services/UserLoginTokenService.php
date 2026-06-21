@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\UserLoginToken;
+use App\Support\SecurityPolicy;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -36,6 +37,13 @@ class UserLoginTokenService
         }
 
         if ($record->session_id && $record->session_id !== $request->session()->getId()) {
+            $this->revoke($user);
+
+            return false;
+        }
+
+        $idleMinutes = SecurityPolicy::sessionIdleMinutes();
+        if ($idleMinutes > 0 && $record->last_used_at?->copy()->addMinutes($idleMinutes)->isPast()) {
             $this->revoke($user);
 
             return false;

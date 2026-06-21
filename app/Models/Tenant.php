@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\TenantLicenseService;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -82,5 +83,15 @@ class Tenant extends BaseTenant
         $license = $this->relationLoaded('currentLicense') ? $this->currentLicense : $this->currentLicense()->first();
 
         return $license === null || $license->isValid();
+    }
+
+    public function isPremiumLicensed(): bool
+    {
+        return app(TenantLicenseService::class)->isPremiumLicensed($this);
+    }
+
+    public function subscriptionLabel(): string
+    {
+        return app(TenantLicenseService::class)->subscriptionLabelFor($this);
     }
 }

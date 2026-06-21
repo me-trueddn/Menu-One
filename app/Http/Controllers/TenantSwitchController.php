@@ -26,7 +26,7 @@ class TenantSwitchController extends Controller
         if ($tenants->count() === 1) {
             TenantAccess::setActiveTenant($user, (string) $tenants->first()->id);
 
-            return redirect()->route('admin.dashboard');
+            return redirect()->route($user->defaultRoute());
         }
 
         return view('theme::pages.tenant.select', compact('tenants'));
@@ -51,10 +51,6 @@ class TenantSwitchController extends Controller
             return redirect()->to($redirect)->with('success', __('menu.tenant_switched'));
         }
 
-        if ($user->linkedTenants()->isNotEmpty()) {
-            return redirect()->route('admin.dashboard')->with('success', __('menu.tenant_switched'));
-        }
-
-        return redirect()->route('profile.edit')->with('success', __('menu.tenant_switched'));
+        return redirect()->route($user->defaultRoute())->with('success', __('menu.tenant_switched'));
     }
 }

@@ -46,7 +46,7 @@ class TenantSwitchTest extends TestCase
             ->post(route('tenant.select.store'), [
                 'tenant_id' => $tenantB->id,
             ])
-            ->assertRedirect(route('admin.dashboard'))
+            ->assertRedirect(route('profile.edit'))
             ->assertSessionHas('success');
 
         $this->assertSame('400-002', TenantAccess::resolveActiveTenantId($user->fresh()));
