@@ -29,17 +29,17 @@ class CaptchaPolicy
 
     public static function bool(string $key): bool
     {
-        return filter_var(Setting::get($key, static::defaults()[$key] ?? '0'), FILTER_VALIDATE_BOOLEAN);
+        return filter_var(Setting::getFilled($key, static::defaults()[$key] ?? '0'), FILTER_VALIDATE_BOOLEAN);
     }
 
     public static function provider(): string
     {
-        return (string) Setting::get('captcha_provider', 'none');
+        return (string) Setting::getFilled('captcha_provider', 'none');
     }
 
     public static function siteKey(): string
     {
-        return (string) Setting::get('captcha_site_key', '');
+        return (string) Setting::getFilled('captcha_site_key', '');
     }
 
     public static function secretKey(): string

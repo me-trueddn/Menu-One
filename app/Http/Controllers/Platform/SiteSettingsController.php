@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Platform;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Support\CaptchaPolicy;
+use App\Support\EmailVerificationTemplate;
 use App\Support\OAuthPolicy;
 use App\Support\SecretMask;
 use Illuminate\Http\RedirectResponse;
@@ -26,34 +27,34 @@ class SiteSettingsController extends Controller
             'contact_phone' => Setting::get('contact_phone', config('site.contact_phone')),
             'support_email' => Setting::get('support_email', config('site.support_email')),
             'default_locale' => Setting::get('default_locale', config('site.default_locale')),
-            'captcha_provider' => Setting::get('captcha_provider', $defaults['captcha_provider']),
-            'captcha_site_key' => Setting::get('captcha_site_key', ''),
-            'captcha_site_key_masked' => SecretMask::mask(Setting::get('captcha_site_key', '')),
+            'captcha_provider' => Setting::getFilled('captcha_provider', $defaults['captcha_provider']),
+            'captcha_site_key' => Setting::getFilled('captcha_site_key', ''),
+            'captcha_site_key_masked' => SecretMask::mask((string) Setting::getFilled('captcha_site_key', '')),
             'captcha_secret_key_masked' => SecretMask::mask(CaptchaPolicy::secretKey()),
-            'has_captcha_site_key' => (bool) Setting::get('captcha_site_key'),
+            'has_captcha_site_key' => filled(Setting::get('captcha_site_key')),
             'captcha_login_enabled' => CaptchaPolicy::bool('captcha_login_enabled'),
             'captcha_register_enabled' => CaptchaPolicy::bool('captcha_register_enabled'),
             'captcha_password_reset_enabled' => CaptchaPolicy::bool('captcha_password_reset_enabled'),
             'registration_enabled' => CaptchaPolicy::registrationEnabled(),
             'has_captcha_secret' => (bool) Setting::get('captcha_secret_key'),
             'oauth_google_enabled' => OAuthPolicy::bool('oauth_google_enabled'),
-            'oauth_google_client_id' => OAuthPolicy::clientId('google'),
+            'oauth_google_client_id' => Setting::getFilled('oauth_google_client_id', OAuthPolicy::defaults()['oauth_google_client_id']),
             'oauth_microsoft_enabled' => OAuthPolicy::bool('oauth_microsoft_enabled'),
-            'oauth_microsoft_client_id' => OAuthPolicy::clientId('microsoft'),
+            'oauth_microsoft_client_id' => Setting::getFilled('oauth_microsoft_client_id', OAuthPolicy::defaults()['oauth_microsoft_client_id']),
             'oauth_allow_login' => OAuthPolicy::allowLogin(),
             'oauth_allow_register' => OAuthPolicy::allowRegister(),
             'has_oauth_google_secret' => (bool) Setting::get('oauth_google_client_secret'),
             'has_oauth_microsoft_secret' => (bool) Setting::get('oauth_microsoft_client_secret'),
             'oauth_google_redirect' => url('/auth/google/callback'),
             'oauth_microsoft_redirect' => url('/auth/microsoft/callback'),
-            'verification_link_expires_minutes' => Setting::get('verification_link_expires_minutes', '1440'),
-            'email_verification_subject' => Setting::get('email_verification_subject', ''),
-            'email_verification_body' => Setting::get('email_verification_body', ''),
-            'default_company_name' => Setting::get('default_company_name', ''),
-            'default_company_tax_number' => Setting::get('default_company_tax_number', ''),
-            'default_company_phone' => Setting::get('default_company_phone', ''),
-            'default_company_email' => Setting::get('default_company_email', ''),
-            'default_company_address' => Setting::get('default_company_address', ''),
+            'verification_link_expires_minutes' => Setting::getFilled('verification_link_expires_minutes', '1440'),
+            'email_verification_subject' => Setting::getFilled('email_verification_subject', EmailVerificationTemplate::subject()),
+            'email_verification_body' => Setting::getFilled('email_verification_body', EmailVerificationTemplate::body()),
+            'default_company_name' => Setting::getFilled('default_company_name', ''),
+            'default_company_tax_number' => Setting::getFilled('default_company_tax_number', ''),
+            'default_company_phone' => Setting::getFilled('default_company_phone', ''),
+            'default_company_email' => Setting::getFilled('default_company_email', ''),
+            'default_company_address' => Setting::getFilled('default_company_address', ''),
             'site_logo_path' => Setting::get('site_logo_path', ''),
             'site_favicon_path' => Setting::get('site_favicon_path', ''),
         ];
@@ -108,8 +109,12 @@ class SiteSettingsController extends Controller
             'oauth_allow_login' => $request->boolean('oauth_allow_login') ? '1' : '0',
             'oauth_allow_register' => $request->boolean('oauth_allow_register') ? '1' : '0',
             'verification_link_expires_minutes' => (string) ($validated['verification_link_expires_minutes'] ?? 1440),
-            'email_verification_subject' => $validated['email_verification_subject'] ?? '',
-            'email_verification_body' => $validated['email_verification_body'] ?? '',
+            'email_verification_subject' => filled($validated['email_verification_subject'] ?? null)
+                ? $validated['email_verification_subject']
+                : EmailVerificationTemplate::subject(),
+            'email_verification_body' => filled($validated['email_verification_body'] ?? null)
+                ? $validated['email_verification_body']
+                : EmailVerificationTemplate::body(),
             'default_company_name' => $validated['default_company_name'] ?? '',
             'default_company_tax_number' => $validated['default_company_tax_number'] ?? '',
             'default_company_phone' => $validated['default_company_phone'] ?? '',

@@ -37,7 +37,7 @@
                     <label class="form-label">{{ __('menu.panel_url') }}</label>
                     <input name="panel_url" type="url" class="form-control @error('panel_url') is-invalid @enderror"
                            value="{{ old('panel_url', $settings['panel_url']) }}" required
-                           placeholder="https://panel.trueddn.com.tr">
+                           placeholder="https://panel.example.com">
                     @error('panel_url')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     <div class="form-text">{{ __('menu.panel_url_hint') }}</div>
                 </div>
@@ -45,7 +45,7 @@
                     <label class="form-label">{{ __('menu.main_site_url') }}</label>
                     <input name="main_site_url" type="url" class="form-control @error('main_site_url') is-invalid @enderror"
                            value="{{ old('main_site_url', $settings['main_site_url']) }}" required
-                           placeholder="https://trueddn.com.tr">
+                           placeholder="https://example.com">
                     @error('main_site_url')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     <div class="form-text">{{ __('menu.main_site_url_hint') }}</div>
                 </div>

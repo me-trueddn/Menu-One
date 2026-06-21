@@ -37,7 +37,7 @@ class SiteConfig
 
     public static function mainSiteUrl(): string
     {
-        return (string) static::get('main_site_url', 'https://trueddn.com.tr');
+        return (string) static::get('main_site_url', config('site.main_site_url'));
     }
 
     public static function contactPhone(): string

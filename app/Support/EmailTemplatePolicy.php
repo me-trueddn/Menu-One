@@ -8,7 +8,7 @@ class EmailTemplatePolicy
 {
     public static function verificationExpiresMinutes(): int
     {
-        $minutes = (int) Setting::get('verification_link_expires_minutes', 1440);
+        $minutes = (int) Setting::getFilled('verification_link_expires_minutes', 1440);
 
         return max(5, min($minutes, 10080));
     }
@@ -19,7 +19,7 @@ class EmailTemplatePolicy
             ? EmailVerificationTemplate::subjectEn()
             : EmailVerificationTemplate::subject();
 
-        return Setting::get('email_verification_subject', $default);
+        return (string) Setting::getFilled('email_verification_subject', $default);
     }
 
     public static function verificationBody(): string
@@ -28,6 +28,6 @@ class EmailTemplatePolicy
             ? EmailVerificationTemplate::bodyEn()
             : EmailVerificationTemplate::body();
 
-        return Setting::get('email_verification_body', $default);
+        return (string) Setting::getFilled('email_verification_body', $default);
     }
 }

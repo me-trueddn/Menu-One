@@ -22,6 +22,17 @@ class Setting extends Model
         return $settings[$key] ?? $default;
     }
 
+    public static function getFilled(string $key, mixed $default = null): mixed
+    {
+        $value = static::get($key);
+
+        if ($value === null || trim((string) $value) === '') {
+            return $default;
+        }
+
+        return $value;
+    }
+
     public static function set(string $key, mixed $value, string $group = 'general'): void
     {
         static::query()->updateOrCreate(
@@ -30,6 +41,28 @@ class Setting extends Model
         );
 
         static::cache()->forget('app.settings');
+    }
+
+    public static function setIfMissing(string $key, mixed $value, string $group = 'general'): void
+    {
+        if (static::query()->where('key', $key)->exists()) {
+            return;
+        }
+
+        static::set($key, $value, $group);
+    }
+
+    public static function setIfEmpty(string $key, mixed $value, string $group = 'general'): bool
+    {
+        $current = static::query()->where('key', $key)->value('value');
+
+        if ($current !== null && trim((string) $current) !== '') {
+            return false;
+        }
+
+        static::set($key, $value, $group);
+
+        return true;
     }
 
     public static function setMany(array $pairs, string $group = 'general'): void
