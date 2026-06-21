@@ -1,7 +1,14 @@
 {
-    "major": 1,
+    "major": 2,
     "minor": 0,
-    "patch": 27,
-    "build": 0,
-    "history": []
+    "patch": 1,
+    "build": 1,
+    "history": [
+        {
+            "build": 1,
+            "version": "1.0.27",
+            "label": "Build 1 - 1.0.27",
+            "built_at": "2026-06-21T17:11:22+00:00"
+        }
+    ]
 }

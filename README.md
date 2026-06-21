@@ -2,13 +2,76 @@
 
 Çok kiracılı (multi-tenant) cafe adisyon SaaS uygulaması. Laravel 12 + PHP 8.2+, MariaDB/MySQL, AdminLTE 4 teması.
 
+## Sürüm
+
+| | |
+|---|---|
+| **Son build** | Build 1 — 1.0.27 |
+| **Geliştirme sürümü** | 2.0.1 |
+| **Testler** | 35 test geçiyor |
+
+```bash
+php artisan version:show      # mevcut sürüm + build geçmişi
+php artisan version:bump        # patch artır (geliştirme)
+php artisan version:build       # release build al
+```
+
+Footer'da `v{sürüm}` ve `Build {n}` etiketi gösterilir.
+
 ## Özellikler
 
-- **Platform Admin:** Cafe (tenant) yönetimi
-- **Cafe Admin:** Masa, kategori, ürün, personel CRUD + raporlar
-- **Garson:** Masa grid, adisyon aç/kapat, ürün ekle, mutfağa gönder
-- **Mutfak:** Bekleyen siparişler (5 sn polling), durum güncelleme
-- **Multi-tenant:** Tek veritabanı + `tenant_id` (stancl/tenancy single-DB)
+### Platform (`/platform/*`)
+- Cafe (tenant) ve lisans tipi yönetimi
+- Kullanıcı / müşteri / personel yönetimi, 2FA, parola politikası
+- Site & mail ayarları, tenant destek modu, impersonation
+
+### Cafe Admin (`/admin/*`)
+- Masa, kategori, ürün, personel CRUD
+- Raporlar, operasyon ekranı (mutfak görünümü)
+
+### Garson (`/waiter/*`)
+- Masa grid, adisyon aç/kapat, ürün ekle/çıkar, mutfağa gönder
+- **Hesabı kapat** → adisyon kasiyere `awaiting_payment` olarak gider
+- Hazır sipariş polling (5 sn)
+- Rezervasyon listesi ve masa detayında rezervasyon yönetimi
+
+### Kasiyer (`/cashier/*`)
+- Masa listesi ve ödeme ekranı
+- Nakit / kredi kartı, bölünmüş ödeme (`split_count`: 0 = tam tutar, 1+ = kişi başı)
+- Ödeme sonrası adisyon kapanır, masa boşalır
+
+### Rezervasyonlar (`/reservations/*`)
+- Garson, kasiyer ve cafe admin erişebilir
+- Misafir adı, telefon, kişi sayısı, tarih/saat aralığı
+- **Ara** butonu (`tel:`) — telefondan misafir arama
+- Arama (ad, telefon, masa) ve sayfalama (10 / 50 / 150)
+- Ödeme sonrası otomatik **Tamamlandı**; garson manuel **Tamamlandı işaretle** de kullanabilir
+- Erken ayrılışta planlanan bitiş `scheduled_ends_at` alanında saklanır
+
+### Mutfak (`/kitchen/*`)
+- Bekleyen siparişler (5 sn polling), durum güncelleme
+
+### Müşteri / Profil
+- Cafe sahipleri profilden cafe oluşturabilir (Free / Premium lisans)
+- Çoklu cafe, tenant seçimi, profil & 2FA ayarları
+
+### Güvenlik & oturum
+- Oturum boşta kalma süresi (platform ayarı, varsayılan 30 dk)
+- Logout ve oturum süresi dolunca login ekranına yönlendirme (419 yerine)
+- Tek oturum token doğrulama, parola süresi, 2FA zorunluluğu
+
+## Sipariş durumları
+
+| Durum | Açıklama |
+|-------|----------|
+| `open` | Adisyon açık, ürün eklenebilir |
+| `sent` | Mutfağa gönderildi |
+| `awaiting_payment` | Garson hesabı kapattı, kasiyer ödeme bekliyor |
+| `closed` | Ödeme alındı, adisyon kapalı |
+
+## Multi-tenant
+
+Tek veritabanı + `tenant_id` (stancl/tenancy single-DB). Aktif tenant oturumda `active_tenant_id` ile seçilir.
 
 ## Gereksinimler
 
@@ -56,7 +119,7 @@ php artisan serve
 
 Giriş: http://127.0.0.1:8000/login
 
-> **Not:** SQLite artık kullanılmıyor. Eski `database/database.sqlite` dosyası silinebilir.
+> **Not:** Üretim ortamında SQLite kullanılmaz. Geliştirme/test için `phpunit.xml` SQLite `:memory:` kullanır.
 
 ## Docker
 
@@ -97,15 +160,8 @@ Yeni dil eklemek için `config/locale.php` içine locale kodunu ekleyin ve `lang
 | Platform Admin | admin@menu-one.test | password |
 | Cafe Admin | admin@demo-cafe.test | password |
 | Garson | waiter@demo-cafe.test | password |
+| Kasiyer | cashier@demo-cafe.test | password |
 | Mutfak | kitchen@demo-cafe.test | password |
-
-## Tema Yapısı
-
-Blade/HTML temalar `themes/` klasöründe tutulur. Aktif tema: `themes/adminlte4/` (AdminLTE 4.0.0 via npm).
-
-```bash
-npm install admin-lte@4.0.0 bootstrap @popperjs/core bootstrap-icons
-```
 
 ## Route Grupları
 
@@ -114,14 +170,25 @@ npm install admin-lte@4.0.0 bootstrap @popperjs/core bootstrap-icons
 | `/platform/*` | platform_admin |
 | `/admin/*` | cafe_admin |
 | `/waiter/*` | waiter |
+| `/cashier/*` | cashier, cafe_admin |
 | `/kitchen/*` | kitchen |
+| `/reservations/*` | waiter, cashier, cafe_admin |
 
-## MSSQL (İleride)
+## Tema Yapısı
 
-Migration'lar Laravel Schema Builder kullanır. `config/database.php` içinde `sqlsrv` connection şablonu mevcuttur.
+Blade/HTML temalar `themes/` klasöründe tutulur. Aktif tema: `themes/adminlte4/` (AdminLTE 4.0.0 via npm).
+
+```bash
+npm install
+npm run build
+```
 
 ## Test
 
 ```bash
 php artisan test
 ```
+
+## MSSQL (İleride)
+
+Migration'lar Laravel Schema Builder kullanır. `config/database.php` içinde `sqlsrv` connection şablonu mevcuttur.
