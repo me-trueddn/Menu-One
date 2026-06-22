@@ -24,6 +24,7 @@ use App\Http\Controllers\Platform\UserGroupController;
 use App\Http\Controllers\Platform\UserSecuritySettingsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReservationController;
+use App\Http\Controllers\StaffInvitationController;
 use App\Http\Controllers\TenantSwitchController;
 use App\Http\Controllers\Waiter\OrderController as WaiterOrderController;
 use App\Http\Controllers\Waiter\TableController as WaiterTableController;
@@ -73,6 +74,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('tenants/{tenant}/connect', [TenantController::class, 'connect'])->name('tenants.connect');
         Route::post('support/disconnect', [TenantController::class, 'disconnectSupport'])->name('support.disconnect');
         Route::post('tenants/{tenant}/staff/lookup', [TenantStaffController::class, 'lookup'])->name('tenants.staff.lookup');
+        Route::delete('tenants/{tenant}/staff/invitations/{invitation}', [TenantStaffController::class, 'revokeInvitation'])->name('tenants.staff.invitations.revoke');
         Route::post('tenants/{tenant}/staff', [TenantStaffController::class, 'store'])->name('tenants.staff.store');
         Route::put('tenants/{tenant}/staff/{user}', [TenantStaffController::class, 'update'])->name('tenants.staff.update');
         Route::delete('tenants/{tenant}/staff/{user}', [TenantStaffController::class, 'destroy'])->name('tenants.staff.destroy');
@@ -86,6 +88,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard', AdminDashboardController::class)->name('dashboard');
         Route::get('/operations', [OperationsController::class, 'index'])->name('operations.index');
         Route::post('staff/lookup', [AdminStaffController::class, 'lookup'])->name('staff.lookup');
+        Route::delete('staff/invitations/{invitation}', [AdminStaffController::class, 'revokeInvitation'])->name('staff.invitations.revoke');
         Route::resource('tables', AdminDiningTableController::class)->except(['show']);
         Route::resource('categories', AdminCategoryController::class)->except(['show']);
         Route::resource('products', AdminProductController::class)->except(['show']);
@@ -135,6 +138,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/profile/cafe', [ProfileController::class, 'storeCafe'])->name('profile.cafe.store');
     Route::delete('/profile/cafe/{tenant}', [ProfileController::class, 'destroyCafe'])->name('profile.cafe.destroy');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::get('/staff/invitation/{token}', [StaffInvitationController::class, 'show'])->name('staff.invitation.show');
+    Route::post('/staff/invitation/{token}/accept', [StaffInvitationController::class, 'accept'])->name('staff.invitation.accept');
+    Route::post('/staff/invitation/{token}/decline', [StaffInvitationController::class, 'decline'])->name('staff.invitation.decline');
 });
 
 require __DIR__.'/auth.php';

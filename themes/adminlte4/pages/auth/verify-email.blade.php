@@ -3,7 +3,7 @@
 @section('content')
 <div class="login-form-container">
     <div class="mb-4 text-center">
-        <a href="{{ route('home') }}"><img src="{{ \App\Support\Branding::logoUrl() }}" alt="{{ config('app.name') }}" style="height: 42px;"></a>
+        <a href="{{ route('home') }}"><img src="{{ \App\Support\Branding::logoUrl() }}" alt="{{ config('app.name') }}" style="height: {{ \App\Support\Branding::logoHeight() }}px;"></a>
     </div>
     <div class="card shadow-sm">
         <div class="card-body p-4">

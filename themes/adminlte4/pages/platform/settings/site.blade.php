@@ -114,6 +114,7 @@
 
             <div class="row">
                 <div class="col-md-3 mb-3">
+                    <input type="hidden" name="registration_enabled" value="0">
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" name="registration_enabled" id="registration_enabled" value="1"
                                @checked(old('registration_enabled', $settings['registration_enabled']))>
@@ -121,6 +122,7 @@
                     </div>
                 </div>
                 <div class="col-md-3 mb-3">
+                    <input type="hidden" name="captcha_login_enabled" value="0">
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" name="captcha_login_enabled" id="captcha_login_enabled" value="1"
                                @checked(old('captcha_login_enabled', $settings['captcha_login_enabled']))>
@@ -128,6 +130,7 @@
                     </div>
                 </div>
                 <div class="col-md-3 mb-3">
+                    <input type="hidden" name="captcha_register_enabled" value="0">
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" name="captcha_register_enabled" id="captcha_register_enabled" value="1"
                                @checked(old('captcha_register_enabled', $settings['captcha_register_enabled']))>
@@ -135,6 +138,7 @@
                     </div>
                 </div>
                 <div class="col-md-3 mb-3">
+                    <input type="hidden" name="captcha_password_reset_enabled" value="0">
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" name="captcha_password_reset_enabled" id="captcha_password_reset_enabled" value="1"
                                @checked(old('captcha_password_reset_enabled', $settings['captcha_password_reset_enabled']))>
@@ -154,6 +158,7 @@
             <div class="row">
                 <div class="col-lg-6 mb-4">
                     <h6 class="mb-3">Google</h6>
+                    <input type="hidden" name="oauth_google_enabled" value="0">
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" name="oauth_google_enabled" id="oauth_google_enabled" value="1"
                                @checked(old('oauth_google_enabled', $settings['oauth_google_enabled']))>
@@ -173,6 +178,7 @@
                 </div>
                 <div class="col-lg-6 mb-4">
                     <h6 class="mb-3">Microsoft</h6>
+                    <input type="hidden" name="oauth_microsoft_enabled" value="0">
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" name="oauth_microsoft_enabled" id="oauth_microsoft_enabled" value="1"
                                @checked(old('oauth_microsoft_enabled', $settings['oauth_microsoft_enabled']))>
@@ -193,6 +199,7 @@
             </div>
             <div class="row">
                 <div class="col-md-6 mb-3">
+                    <input type="hidden" name="oauth_allow_login" value="0">
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" name="oauth_allow_login" id="oauth_allow_login" value="1"
                                @checked(old('oauth_allow_login', $settings['oauth_allow_login']))>
@@ -200,6 +207,7 @@
                     </div>
                 </div>
                 <div class="col-md-6 mb-3">
+                    <input type="hidden" name="oauth_allow_register" value="0">
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" name="oauth_allow_register" id="oauth_allow_register" value="1"
                                @checked(old('oauth_allow_register', $settings['oauth_allow_register']))>
@@ -213,14 +221,106 @@
                 <div class="col-md-6 mb-3">
                     <label class="form-label">{{ __('menu.site_logo') }}</label>
                     <input type="file" name="site_logo" class="form-control" accept="image/*">
-                    @if($settings['site_logo_path'])<img src="{{ asset($settings['site_logo_path']) }}" class="mt-2" style="height:40px">@endif
+                    @if($settings['site_logo_path'])
+                        <div class="form-text mt-1">{{ __('menu.logo_uploaded_hint') }}</div>
+                    @endif
                 </div>
                 <div class="col-md-6 mb-3">
                     <label class="form-label">{{ __('menu.site_favicon') }}</label>
                     <input type="file" name="site_favicon" class="form-control" accept="image/*,.ico">
-                    @if($settings['site_favicon_path'])<img src="{{ asset($settings['site_favicon_path']) }}" class="mt-2" style="height:24px">@endif
+                    @if($settings['site_favicon_path'])<img src="{{ \App\Support\Branding::faviconUrl() }}" class="mt-2" style="height:24px">@endif
                 </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label" for="site_logo_height">{{ __('menu.site_logo_height') }}</label>
+                    <div class="input-group">
+                        <input type="number" id="site_logo_height" name="site_logo_height" class="form-control"
+                               min="16" max="160" step="1"
+                               value="{{ old('site_logo_height', $settings['site_logo_height']) }}" required>
+                        <span class="input-group-text">px</span>
+                    </div>
+                    <div class="form-text">{{ __('menu.site_logo_height_hint') }}</div>
+                    @error('site_logo_height')<div class="text-danger small">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label" for="site_logo_height_register">{{ __('menu.site_logo_height_register') }}</label>
+                    <div class="input-group">
+                        <input type="number" id="site_logo_height_register" name="site_logo_height_register" class="form-control"
+                               min="16" max="120" step="1"
+                               value="{{ old('site_logo_height_register', $settings['site_logo_height_register']) }}" required>
+                        <span class="input-group-text">px</span>
+                    </div>
+                    <div class="form-text">{{ __('menu.site_logo_height_register_hint') }}</div>
+                    @error('site_logo_height_register')<div class="text-danger small">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label" for="site_sidebar_logo_height">{{ __('menu.site_sidebar_logo_height') }}</label>
+                    <div class="input-group">
+                        <input type="number" id="site_sidebar_logo_height" name="site_sidebar_logo_height" class="form-control"
+                               min="16" max="120" step="1"
+                               value="{{ old('site_sidebar_logo_height', $settings['site_sidebar_logo_height']) }}" required>
+                        <span class="input-group-text">px</span>
+                    </div>
+                    <div class="form-text">{{ __('menu.site_sidebar_logo_height_hint') }}</div>
+                    @error('site_sidebar_logo_height')<div class="text-danger small">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label" for="site_sidebar_brand_height">{{ __('menu.site_sidebar_brand_height') }}</label>
+                    <div class="input-group">
+                        <input type="number" id="site_sidebar_brand_height" name="site_sidebar_brand_height" class="form-control"
+                               min="40" max="160" step="1"
+                               value="{{ old('site_sidebar_brand_height', $settings['site_sidebar_brand_height']) }}" required>
+                        <span class="input-group-text">px</span>
+                    </div>
+                    <div class="form-text">{{ __('menu.site_sidebar_brand_height_hint') }}</div>
+                    @error('site_sidebar_brand_height')<div class="text-danger small">{{ $message }}</div>@enderror
+                </div>
+                @if($settings['site_logo_path'])
+                <div class="col-md-6 mb-3">
+                    <label class="form-label text-muted small">{{ __('menu.site_logo_height') }} — {{ __('menu.email_template_preview') }}</label>
+                    <div class="border rounded bg-body-tertiary p-3 text-center">
+                        <img src="{{ \App\Support\Branding::logoUrl() }}" alt="" id="siteLogoPreview"
+                             style="height: {{ old('site_logo_height', $settings['site_logo_height']) }}px; width: auto; object-fit: contain;">
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label text-muted small">{{ __('menu.site_logo_height_register') }} — {{ __('menu.email_template_preview') }}</label>
+                    <div class="border rounded bg-body-tertiary p-3 text-center" style="max-width: 280px;">
+                        <img src="{{ \App\Support\Branding::logoUrl() }}" alt="" id="registerLogoPreview"
+                             style="height: {{ old('site_logo_height_register', $settings['site_logo_height_register']) }}px; width: auto; max-width: 100%; object-fit: contain;">
+                    </div>
+                </div>
+                <div class="col-12 mb-3">
+                    <label class="form-label text-muted small">{{ __('menu.sidebar_brand_preview') }}</label>
+                    <div id="sidebarBrandPreview" class="border rounded bg-dark d-flex align-items-center px-3"
+                         style="width: 220px; height: {{ old('site_sidebar_brand_height', $settings['site_sidebar_brand_height']) }}px;">
+                        <img src="{{ \App\Support\Branding::logoUrl() }}" alt="" id="sidebarLogoPreview"
+                             style="height: {{ old('site_sidebar_logo_height', $settings['site_sidebar_logo_height']) }}px; max-height: calc(100% - 8px); width: auto; object-fit: contain;">
+                    </div>
+                </div>
+                @endif
             </div>
+            @if($settings['site_logo_path'])
+            @push('scripts')
+            <script>
+            document.getElementById('site_logo_height')?.addEventListener('input', function () {
+                const preview = document.getElementById('siteLogoPreview');
+                if (preview) preview.style.height = this.value + 'px';
+            });
+            document.getElementById('site_logo_height_register')?.addEventListener('input', function () {
+                const preview = document.getElementById('registerLogoPreview');
+                if (preview) preview.style.height = this.value + 'px';
+            });
+            document.getElementById('site_sidebar_logo_height')?.addEventListener('input', function () {
+                const preview = document.getElementById('sidebarLogoPreview');
+                if (preview) preview.style.height = this.value + 'px';
+            });
+            document.getElementById('site_sidebar_brand_height')?.addEventListener('input', function () {
+                const bar = document.getElementById('sidebarBrandPreview');
+                if (bar) bar.style.height = this.value + 'px';
+            });
+            </script>
+            @endpush
+            @endif
             <hr>
             <h6 class="mb-3">{{ __('menu.default_company_info') }}</h6>
             <div class="row">
@@ -230,21 +330,93 @@
                 <div class="col-md-6 mb-3"><label class="form-label">{{ __('menu.company_email') }}</label><input name="default_company_email" class="form-control" value="{{ old('default_company_email', $settings['default_company_email']) }}"></div>
                 <div class="col-12 mb-3"><label class="form-label">{{ __('menu.company_address') }}</label><textarea name="default_company_address" class="form-control" rows="2">{{ old('default_company_address', $settings['default_company_address']) }}</textarea></div>
             </div>
-            <hr>
-            <h6 class="mb-3">{{ __('menu.email_verification_settings') }}</h6>
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">{{ __('menu.verification_link_expires_minutes') }}</label>
-                    <input type="number" name="verification_link_expires_minutes" class="form-control" min="5" max="10080" value="{{ old('verification_link_expires_minutes', $settings['verification_link_expires_minutes']) }}">
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-header border-bottom-0 pb-0">
+            <h5 class="mb-3">{{ __('menu.notification_templates') }}</h5>
+            <ul class="nav nav-tabs card-header-tabs" id="notificationTemplateTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="tab-verification" data-bs-toggle="tab" data-bs-target="#pane-verification" type="button" role="tab">
+                        {{ __('menu.notification_tab_verification') }}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tab-password-reset" data-bs-toggle="tab" data-bs-target="#pane-password-reset" type="button" role="tab">
+                        {{ __('menu.notification_tab_password_reset') }}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tab-staff-invitation" data-bs-toggle="tab" data-bs-target="#pane-staff-invitation" type="button" role="tab">
+                        {{ __('menu.notification_tab_staff_invitation') }}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tab-two-factor" data-bs-toggle="tab" data-bs-target="#pane-two-factor" type="button" role="tab">
+                        {{ __('menu.notification_tab_two_factor') }}
+                    </button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="pane-verification" role="tabpanel">
+                    @include('theme::partials.notification-template-fields', [
+                        'expiresName' => 'verification_link_expires_minutes',
+                        'expiresValue' => $settings['verification_link_expires_minutes'],
+                        'subjectName' => 'email_verification_subject',
+                        'subjectValue' => $settings['email_verification_subject'],
+                        'bodyName' => 'email_verification_body',
+                        'bodyValue' => $settings['email_verification_body'],
+                        'hint' => __('menu.email_template_hint_verification'),
+                        'previewKey' => 'verification',
+                    ])
                 </div>
-                <div class="col-md-8 mb-3">
-                    <label class="form-label">{{ __('menu.email_subject') }}</label>
-                    <input name="email_verification_subject" class="form-control" value="{{ old('email_verification_subject', $settings['email_verification_subject']) }}">
+                <div class="tab-pane fade" id="pane-password-reset" role="tabpanel">
+                    @include('theme::partials.notification-template-fields', [
+                        'expiresName' => 'password_reset_expires_minutes',
+                        'expiresValue' => $settings['password_reset_expires_minutes'],
+                        'subjectName' => 'password_reset_subject',
+                        'subjectValue' => $settings['password_reset_subject'],
+                        'bodyName' => 'password_reset_body',
+                        'bodyValue' => $settings['password_reset_body'],
+                        'hint' => __('menu.email_template_hint_password_reset'),
+                        'previewKey' => 'password_reset',
+                    ])
                 </div>
-                <div class="col-12 mb-3">
-                    <label class="form-label">{{ __('menu.email_body') }}</label>
-                    <textarea name="email_verification_body" class="form-control font-monospace" rows="14">{{ old('email_verification_body', $settings['email_verification_body']) }}</textarea>
-                    <div class="form-text">{{ __('menu.email_template_hint') }}</div>
+                <div class="tab-pane fade" id="pane-staff-invitation" role="tabpanel">
+                    @include('theme::partials.notification-template-fields', [
+                        'expiresName' => 'staff_invitation_expires_minutes',
+                        'expiresValue' => $settings['staff_invitation_expires_minutes'],
+                        'subjectName' => 'staff_invitation_subject',
+                        'subjectValue' => $settings['staff_invitation_subject'],
+                        'bodyName' => 'staff_invitation_body',
+                        'bodyValue' => $settings['staff_invitation_body'],
+                        'hint' => __('menu.email_template_hint_staff_invitation'),
+                        'previewKey' => 'staff_invitation',
+                    ])
+                </div>
+                <div class="tab-pane fade" id="pane-two-factor" role="tabpanel">
+                    <h6 class="text-muted mb-3">{{ __('menu.two_factor_enabled_template') }}</h6>
+                    @include('theme::partials.notification-template-fields', [
+                        'subjectName' => 'two_factor_enabled_subject',
+                        'subjectValue' => $settings['two_factor_enabled_subject'],
+                        'bodyName' => 'two_factor_enabled_body',
+                        'bodyValue' => $settings['two_factor_enabled_body'],
+                        'hint' => __('menu.email_template_hint_two_factor'),
+                        'previewKey' => 'two_factor_enabled',
+                    ])
+                    <hr>
+                    <h6 class="text-muted mb-3">{{ __('menu.two_factor_disabled_template') }}</h6>
+                    @include('theme::partials.notification-template-fields', [
+                        'subjectName' => 'two_factor_disabled_subject',
+                        'subjectValue' => $settings['two_factor_disabled_subject'],
+                        'bodyName' => 'two_factor_disabled_body',
+                        'bodyValue' => $settings['two_factor_disabled_body'],
+                        'hint' => __('menu.email_template_hint_two_factor'),
+                        'previewKey' => 'two_factor_disabled',
+                    ])
                 </div>
             </div>
         </div>
@@ -253,4 +425,8 @@
         </div>
     </div>
 </form>
+
+@push('scripts')
+@include('theme::partials.notification-template-preview-script')
+@endpush
 @endsection

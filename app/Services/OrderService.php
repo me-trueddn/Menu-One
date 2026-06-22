@@ -123,6 +123,37 @@ class OrderService
         return $order->fresh(['items.product', 'cafeTable']);
     }
 
+    public function voidEmptyOrder(Order $order): Order
+    {
+        if ($order->status === OrderStatus::Closed) {
+            throw new InvalidArgumentException('Adisyon zaten kapalı.');
+        }
+
+        if ($order->status === OrderStatus::AwaitingPayment) {
+            throw new InvalidArgumentException('Ödeme bekleyen adisyon bu şekilde kapatılamaz.');
+        }
+
+        if ($order->items()->exists()) {
+            throw new InvalidArgumentException('Ürün bulunan adisyon doğrudan kapatılamaz.');
+        }
+
+        return DB::transaction(function () use ($order) {
+            $closedAt = now();
+
+            $order->update([
+                'status' => OrderStatus::Closed,
+                'total' => 0,
+                'closed_at' => $closedAt,
+            ]);
+
+            $table = $order->cafeTable;
+            app(ReservationService::class)->finalizeCheckoutForTable($table, $closedAt, $order->created_at);
+            $table->update(['status' => TableStatus::Empty]);
+
+            return $order->fresh();
+        });
+    }
+
     public function closeOrder(Order $order, ?string $paymentMethod = null, int $splitCount = 1): Order
     {
         return DB::transaction(function () use ($order, $paymentMethod, $splitCount) {

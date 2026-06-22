@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Branding;
 use App\Services\TenantLicenseService;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -39,6 +40,11 @@ class Tenant extends BaseTenant
         'stopped_at' => 'datetime',
     ];
 
+    public function logoUrl(): string
+    {
+        return Branding::cafeLogoUrl($this);
+    }
+
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_user_id');
@@ -52,6 +58,19 @@ class Tenant extends BaseTenant
     public function staffUsers(): HasMany
     {
         return $this->hasMany(User::class, 'tenant_id', 'id');
+    }
+
+    public function pendingStaffInvitations(): HasMany
+    {
+        return $this->hasMany(TenantStaffInvitation::class, 'tenant_id', 'id')
+            ->whereNull('accepted_at')
+            ->whereNull('declined_at')
+            ->where('expires_at', '>', now());
+    }
+
+    public function staffInvitations(): HasMany
+    {
+        return $this->hasMany(TenantStaffInvitation::class, 'tenant_id', 'id');
     }
 
     public function members(): BelongsToMany

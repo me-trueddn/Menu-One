@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\TenantStaffInvitation;
 use App\Models\User;
 use App\Services\CafeStaffService;
+use App\Services\StaffInvitationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,7 +14,10 @@ use Illuminate\View\View;
 
 class StaffController extends Controller
 {
-    public function __construct(private CafeStaffService $staff) {}
+    public function __construct(
+        private CafeStaffService $staff,
+        private StaffInvitationService $invitations,
+    ) {}
 
     public function index(): View
     {
@@ -22,7 +27,12 @@ class StaffController extends Controller
             ->orderBy('name')
             ->paginate(20);
 
-        return view('theme::pages.admin.staff.index', compact('staff'));
+        $tenant = tenant();
+        abort_unless($tenant, 403);
+
+        $invitations = $this->invitations->listForTenant($tenant);
+
+        return view('theme::pages.admin.staff.index', compact('staff', 'invitations'));
     }
 
     public function create(): View
@@ -61,11 +71,11 @@ class StaffController extends Controller
         $tenant = tenant();
         abort_unless($tenant, 403);
 
-        $this->staff->attach($tenant, $user, $validated['role']);
+        $this->invitations->invite($tenant, $user, $validated['role'], $this->authUser());
 
         return redirect()
             ->route('admin.staff.index')
-            ->with('success', __('menu.staff_attached'));
+            ->with('success', __('menu.staff_invitation_sent'));
     }
 
     public function edit(User $staff): View
@@ -106,5 +116,16 @@ class StaffController extends Controller
         return redirect()
             ->route('admin.staff.index')
             ->with('success', __('menu.staff_removed'));
+    }
+
+    public function revokeInvitation(TenantStaffInvitation $invitation): RedirectResponse
+    {
+        abort_unless($invitation->tenant_id === $this->tenantId(), 404);
+
+        $this->invitations->revoke($invitation, $this->authUser());
+
+        return redirect()
+            ->route('admin.staff.index')
+            ->with('success', __('menu.staff_invitation_revoked'));
     }
 }

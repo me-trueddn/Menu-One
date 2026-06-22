@@ -39,6 +39,7 @@ class DiningTable extends Model
     {
         return $this->hasOne(Order::class, 'cafe_table_id')
             ->whereIn('status', OrderStatus::payableValues())
+            ->whereDate('created_at', today())
             ->latestOfMany();
     }
 
@@ -60,6 +61,7 @@ class DiningTable extends Model
     {
         return $this->reservations()
             ->where('status', ReservationStatus::Active)
+            ->whereDate('starts_at', today())
             ->where('ends_at', '>=', now())
             ->orderBy('starts_at');
     }

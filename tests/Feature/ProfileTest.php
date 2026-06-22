@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\Branding;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -31,6 +32,20 @@ class ProfileTest extends TestCase
 
         $response->assertOk();
         $response->assertSee(__('menu.profile_tab'));
+    }
+
+    public function test_profile_page_includes_site_logo_and_favicon(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('user');
+
+        $response = $this
+            ->actingAs($user)
+            ->get('/profile');
+
+        $response->assertOk();
+        $response->assertSee(Branding::logoUrl(), false);
+        $response->assertSee('<link rel="icon" href="'.Branding::faviconUrl().'">', false);
     }
 
     public function test_profile_information_can_be_updated(): void

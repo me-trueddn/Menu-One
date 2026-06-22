@@ -6,7 +6,7 @@
 </div>
 
 <div class="brand-name">
-    <a href="{{ route('home') }}"><img src="{{ \App\Support\Branding::logoUrl() }}" alt="{{ \App\Support\SiteConfig::name() }}" style="height: 42px;"></a>
+    <a href="{{ route('home') }}"><img src="{{ \App\Support\Branding::logoUrl() }}" alt="{{ \App\Support\SiteConfig::name() }}" style="height: {{ \App\Support\Branding::logoHeight() }}px;"></a>
 </div>
 
 <h1 class="login-title">{{ __('menu.login_welcome') }}</h1>
@@ -82,6 +82,9 @@
 <p class="contact-title">{{ __('menu.contact_title') }}</p>
 @if($phone = \App\Support\SiteConfig::contactPhone())
     <div class="contact-item"><i class="fa fa-phone"></i><a href="tel:{{ preg_replace('/\s+/', '', $phone) }}">{{ $phone }}</a></div>
+@endif
+@if($email = \App\Support\SiteConfig::supportEmail())
+    <div class="contact-item"><i class="fa fa-envelope"></i><a href="mailto:{{ $email }}">{{ $email }}</a></div>
 @endif
 <div class="contact-item">
     <i class="fa fa-globe"></i>

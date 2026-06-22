@@ -25,7 +25,7 @@
                     @endforeach
                 </select>
             </div>
-            <button type="submit" class="btn btn-primary" id="staffSubmitBtn" disabled>{{ __('menu.add_staff') }}</button>
+            <button type="submit" class="btn btn-primary" id="staffSubmitBtn" disabled>{{ __('menu.send_invitation') }}</button>
             <a href="{{ route('admin.staff.index') }}" class="btn btn-secondary">{{ __('menu.cancel') }}</a>
         </form>
     </div>

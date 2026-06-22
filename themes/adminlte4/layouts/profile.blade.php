@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', config('app.name'))</title>
+    <link rel="icon" href="{{ \App\Support\Branding::faviconUrl() }}">
     @vite(['resources/css/themes/adminlte4.css', 'resources/js/themes/adminlte4.js'])
+    @include('theme::partials.branding-styles')
     @stack('styles')
 </head>
 <body class="bg-body-tertiary">
@@ -13,7 +15,10 @@
 <div class="app-wrapper">
     <nav class="app-header navbar navbar-expand bg-body border-bottom">
         <div class="container-fluid">
-            <a href="{{ route('home') }}" class="navbar-brand fw-light">{{ __('menu.app_name') }}</a>
+            <a href="{{ route('home') }}" class="navbar-brand d-flex align-items-center py-0">
+                <img src="{{ \App\Support\Branding::logoUrl() }}" alt="{{ \App\Support\SiteConfig::name() }}" class="navbar-brand-logo"
+                     style="height: {{ \App\Support\Branding::sidebarLogoHeight() }}px; width: auto; max-width: 12rem; object-fit: contain;">
+            </a>
             <ul class="navbar-nav ms-auto align-items-center gap-2">
                 @if(!empty($canSwitchTenants) && $canSwitchTenants)
                     <li class="nav-item">@include('theme::partials.tenant-switcher')</li>

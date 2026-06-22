@@ -6,7 +6,10 @@
         </button>
 
         <div class="text-center mb-3">
-            @include('theme::partials.brand-logo', ['height' => 48])
+            <a href="{{ route('home') }}" class="text-decoration-none d-inline-block">
+                <img src="{{ \App\Support\Branding::logoUrl() }}" alt="{{ \App\Support\SiteConfig::name() }}"
+                     style="height: {{ \App\Support\Branding::registerLogoHeight() }}px; width: auto; max-width: 100%; object-fit: contain;">
+            </a>
         </div>
         <h2 class="login-title" id="registerTitle">{{ __('menu.register_welcome') }}</h2>
         <p class="login-subtitle">{{ __('menu.register_subtitle') }}</p>

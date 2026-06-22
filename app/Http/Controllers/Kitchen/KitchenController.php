@@ -16,25 +16,21 @@ class KitchenController extends Controller
 
     public function index(): View
     {
-        $items = $this->kitchen->pendingItems();
+        $tables = $this->kitchen->pendingGroupedByTable();
 
-        return view('theme::pages.kitchen.index', compact('items'));
+        return view('theme::pages.kitchen.index', compact('tables'));
     }
 
     public function poll(): JsonResponse
     {
-        $items = $this->kitchen->pendingItems()->map(fn ($item) => [
-            'id' => $item->id,
-            'table' => $item->order->cafeTable->name,
-            'product' => $item->product->name,
-            'qty' => $item->qty,
-            'status' => $item->status->value,
-            'status_label' => $item->status->label(),
-            'notes' => $item->notes,
-            'created_at' => $item->created_at->format('H:i'),
+        $tables = $this->kitchen->pendingGroupedByTable()->map(fn (array $group) => [
+            'table_id' => $group['table_id'],
+            'table' => $group['table'],
+            'since' => $group['since']->format('H:i'),
+            'items' => $group['items']->map(fn (OrderItem $item) => $this->serializeItem($item))->values(),
         ]);
 
-        return response()->json(['items' => $items]);
+        return response()->json(['tables' => $tables]);
     }
 
     public function updateStatus(Request $request, OrderItem $item): JsonResponse
@@ -48,11 +44,22 @@ class KitchenController extends Controller
 
         return response()->json([
             'success' => true,
-            'item' => [
-                'id' => $updated->id,
-                'status' => $updated->status->value,
-                'status_label' => $updated->status->label(),
-            ],
+            'item' => $this->serializeItem($updated),
         ]);
+    }
+
+    /** @return array<string, mixed> */
+    protected function serializeItem(OrderItem $item): array
+    {
+        return [
+            'id' => $item->id,
+            'table' => $item->order->cafeTable->name,
+            'product' => $item->product->name,
+            'qty' => $item->qty,
+            'status' => $item->status->value,
+            'status_label' => $item->status->label(),
+            'notes' => $item->notes,
+            'created_at' => $item->created_at->format('H:i'),
+        ];
     }
 }

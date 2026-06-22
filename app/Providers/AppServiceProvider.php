@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\SupportSessionService;
 use App\Services\UserImpersonationService;
 use App\Support\TenantAccess;
+use App\Support\SettingsDefaults;
 use App\Support\VersionManager;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
@@ -58,6 +59,7 @@ class AppServiceProvider extends ServiceProvider
         Route::bind('customer', fn (string $value) => User::findOrFail($value));
 
         $this->applyMailSettingsFromDatabase();
+        $this->applyBrandingDefaults();
         $this->registerSocialiteProviders();
         $this->applyAppVersion();
     }
@@ -79,6 +81,19 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(function (\SocialiteProviders\Manager\SocialiteWasCalled $event) {
             $event->extendSocialite('azure', \SocialiteProviders\Azure\Provider::class);
         });
+    }
+
+    protected function applyBrandingDefaults(): void
+    {
+        if (! Schema::hasTable('settings')) {
+            return;
+        }
+
+        try {
+            SettingsDefaults::ensureBrandingDefaults();
+        } catch (\Throwable) {
+            //
+        }
     }
 
     protected function applyMailSettingsFromDatabase(): void

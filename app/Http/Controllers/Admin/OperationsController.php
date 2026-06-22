@@ -19,16 +19,17 @@ class OperationsController extends Controller
         $openOrders = Order::query()
             ->with(['cafeTable', 'items.product', 'user'])
             ->whereIn('status', OrderStatus::payableValues())
+            ->whereDate('created_at', today())
             ->orderByDesc('updated_at')
             ->get();
-        $kitchenItems = $this->kitchen->pendingItems();
-        $readyItems = $this->kitchen->readyItems();
+        $kitchenTables = $this->kitchen->pendingGroupedByTable();
+        $readyTables = $this->kitchen->readyGroupedByTable();
 
         return view('theme::pages.admin.operations.index', compact(
             'tables',
             'openOrders',
-            'kitchenItems',
-            'readyItems',
+            'kitchenTables',
+            'readyTables',
         ));
     }
 }

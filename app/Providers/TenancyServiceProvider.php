@@ -110,11 +110,11 @@ class TenancyServiceProvider extends ServiceProvider
             Middleware\InitializeTenancyByRequestData::class,
         ];
 
-        $kernel = $this->app->make(\Illuminate\Foundation\Http\Kernel::class);
+        $kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
 
         foreach (array_reverse($tenancyMiddleware) as $middleware) {
             if (method_exists($kernel, 'prependToMiddlewarePriority')) {
-                $kernel->prependToMiddlewarePriority($middleware);
+                call_user_func([$kernel, 'prependToMiddlewarePriority'], $middleware);
             }
         }
     }

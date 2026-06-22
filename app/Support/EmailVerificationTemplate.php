@@ -16,7 +16,7 @@ class EmailVerificationTemplate
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:linear-gradient(135deg,#2563eb 0%,#1e40af 100%);border-radius:12px 12px 0 0">
 <tr>
 <td style="padding:36px 32px;text-align:center">
-<div style="font-size:13px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.85);margin-bottom:8px">{site_name}</div>
+<img src="{site_logo_url}" alt="{site_name}" style="max-height:48px;width:auto;display:block;margin:0 auto 16px">
 <div style="font-size:26px;font-weight:700;color:#ffffff">E-posta Doğrulama</div>
 </td>
 </tr>
@@ -78,7 +78,7 @@ HTML;
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:linear-gradient(135deg,#2563eb 0%,#1e40af 100%);border-radius:12px 12px 0 0">
 <tr>
 <td style="padding:36px 32px;text-align:center">
-<div style="font-size:13px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.85);margin-bottom:8px">{site_name}</div>
+<img src="{site_logo_url}" alt="{site_name}" style="max-height:48px;width:auto;display:block;margin:0 auto 16px">
 <div style="font-size:26px;font-weight:700;color:#ffffff">Email Verification</div>
 </td>
 </tr>

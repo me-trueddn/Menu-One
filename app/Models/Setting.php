@@ -72,6 +72,28 @@ class Setting extends Model
         }
     }
 
+    /** @param  array<string, string>  $defaults */
+    public static function mergedGroup(string $group, array $defaults): array
+    {
+        $stored = static::query()
+            ->where('group', $group)
+            ->pluck('value', 'key')
+            ->all();
+
+        return array_merge($defaults, $stored);
+    }
+
+    public static function boolean(string $key, bool $default = false): bool
+    {
+        $value = static::get($key);
+
+        if ($value === null) {
+            return $default;
+        }
+
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+    }
+
     public static function flushCache(): void
     {
         static::cache()->forget('app.settings');

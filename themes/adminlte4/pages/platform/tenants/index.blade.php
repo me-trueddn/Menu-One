@@ -28,6 +28,7 @@
                     <th>{{ __('menu.tenant_id') }}</th>
                     <th>{{ __('menu.site_name') }}</th>
                     <th>{{ __('menu.owner_email') }}</th>
+                    <th>{{ __('menu.account_type') }}</th>
                     <th>{{ __('menu.created_at') }}</th>
                     <th>{{ __('menu.license_expires') }}</th>
                     <th>{{ __('menu.status') }}</th>
@@ -39,12 +40,11 @@
                     <tr>
                         <td><code>{{ $tenant->id }}</code></td>
                         <td>
-                            @if($tenant->logo_path)
-                                <img src="{{ \App\Support\Branding::tenantLogoUrl($tenant->logo_path) }}" alt="" style="height:24px" class="me-1">
-                            @endif
+                            <img src="{{ \App\Support\Branding::cafeLogoUrl($tenant) }}" alt="" style="height:24px" class="me-1">
                             {{ $tenant->name }}
                         </td>
                         <td>{{ $tenant->owner?->email ?? '—' }}</td>
+                        <td>@include('theme::partials.cafe-subscription-badge', ['cafe' => $tenant])</td>
                         <td>{{ $tenant->created_at?->format('d.m.Y') ?? '—' }}</td>
                         <td>{{ $tenant->currentLicense?->expires_at?->format('d.m.Y') ?? '—' }}</td>
                         <td>
@@ -68,7 +68,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="7" class="text-center text-muted">{{ __('menu.no_data') }}</td></tr>
+                    <tr><td colspan="8" class="text-center text-muted">{{ __('menu.no_data') }}</td></tr>
                 @endforelse
             </tbody>
         </table>

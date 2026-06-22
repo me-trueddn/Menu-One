@@ -24,7 +24,9 @@ class OAuthPolicy
 
     public static function bool(string $key): bool
     {
-        return filter_var(Setting::getFilled($key, static::defaults()[$key] ?? '0'), FILTER_VALIDATE_BOOLEAN);
+        $defaults = static::defaults();
+
+        return Setting::boolean($key, filter_var($defaults[$key] ?? '0', FILTER_VALIDATE_BOOLEAN));
     }
 
     public static function googleConfigured(): bool
@@ -43,7 +45,7 @@ class OAuthPolicy
 
     public static function clientId(string $provider): string
     {
-        return (string) Setting::getFilled('oauth_'.$provider.'_client_id', '');
+        return (string) (Setting::mergedGroup('site', static::defaults())['oauth_'.$provider.'_client_id'] ?? '');
     }
 
     public static function clientSecret(string $provider): string

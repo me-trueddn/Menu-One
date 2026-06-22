@@ -7,6 +7,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Services\MailConfigService;
 use App\Services\PasswordLifecycleService;
+use App\Services\TwoFactorNotificationService;
 use App\Support\MailExceptionFormatter;
 use App\Support\SecurityPolicy;
 use App\Support\SuperAdminGuard;
@@ -19,7 +20,10 @@ use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
-    public function __construct(private PasswordLifecycleService $passwordLifecycle) {}
+    public function __construct(
+        private PasswordLifecycleService $passwordLifecycle,
+        private TwoFactorNotificationService $twoFactorNotifications,
+    ) {}
     public function index(): View
     {
         $users = User::query()
@@ -76,7 +80,7 @@ class UserController extends Controller
 
     public function edit(User $user): View
     {
-        abort_unless($user->tenant_id === null && ! $user->isCustomer(), 404);
+        abort_unless($user->isPlatformStaffMember(), 404);
         SuperAdminGuard::abortIfProtected($user);
 
         $groups = Role::query()->orderBy('name')->get();
@@ -88,7 +92,7 @@ class UserController extends Controller
 
     public function update(Request $request, User $user): RedirectResponse
     {
-        abort_unless($user->tenant_id === null && ! $user->isCustomer(), 404);
+        abort_unless($user->isPlatformStaffMember(), 404);
         SuperAdminGuard::abortIfProtected($user);
 
         $validated = $request->validate([
@@ -125,7 +129,7 @@ class UserController extends Controller
 
     public function destroy(User $user): RedirectResponse
     {
-        abort_unless($user->tenant_id === null && ! $user->isCustomer(), 404);
+        abort_unless($user->isPlatformStaffMember(), 404);
         SuperAdminGuard::abortIfProtected($user);
         abort_if($user->id === $this->authUser()->id, 403);
 
@@ -141,7 +145,7 @@ class UserController extends Controller
 
     public function resetPassword(Request $request, User $user): RedirectResponse
     {
-        abort_unless($user->tenant_id === null && ! $user->isCustomer(), 404);
+        abort_unless($user->isPlatformStaffMember(), 404);
         SuperAdminGuard::abortIfProtected($user);
 
         $validated = $request->validate([
@@ -158,21 +162,28 @@ class UserController extends Controller
 
     public function toggleTwoFactor(User $user): RedirectResponse
     {
-        abort_unless($user->tenant_id === null && ! $user->isCustomer(), 404);
+        abort_unless($user->isPlatformStaffMember(), 404);
         SuperAdminGuard::abortIfProtected($user);
 
         if (! SecurityPolicy::bool('security_2fa_enabled_globally')) {
             return back()->with('error', __('menu.two_factor_disabled_globally'));
         }
 
-        $user->update(['two_factor_enabled' => ! $user->two_factor_enabled]);
+        $enabled = ! $user->two_factor_enabled;
+        $user->update(['two_factor_enabled' => $enabled]);
+
+        try {
+            $this->twoFactorNotifications->notifyStatusChange($user->fresh(), $enabled);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return back()->with('success', __('menu.messages.updated'));
     }
 
     public function changeEmail(Request $request, User $user): RedirectResponse
     {
-        abort_unless($user->tenant_id === null && ! $user->isCustomer(), 404);
+        abort_unless($user->isPlatformStaffMember(), 404);
         SuperAdminGuard::abortIfProtected($user);
 
         $validated = $request->validate([
@@ -186,7 +197,7 @@ class UserController extends Controller
 
     public function sendResetLink(User $user): RedirectResponse
     {
-        abort_unless($user->tenant_id === null && ! $user->isCustomer(), 404);
+        abort_unless($user->isPlatformStaffMember(), 404);
         SuperAdminGuard::abortIfProtected($user);
 
         try {
@@ -212,7 +223,7 @@ class UserController extends Controller
 
     public function toggleActive(User $user): RedirectResponse
     {
-        abort_unless($user->tenant_id === null && ! $user->isCustomer(), 404);
+        abort_unless($user->isPlatformStaffMember(), 404);
         SuperAdminGuard::abortIfProtected($user);
         abort_if($user->id === $this->authUser()->id, 403);
 
@@ -223,7 +234,7 @@ class UserController extends Controller
 
     public function attachTenant(Request $request, User $user): RedirectResponse
     {
-        abort_unless($user->tenant_id === null && ! $user->isCustomer(), 404);
+        abort_unless($user->isPlatformStaffMember(), 404);
         SuperAdminGuard::abortIfProtected($user);
 
         $validated = $request->validate([
@@ -241,7 +252,7 @@ class UserController extends Controller
 
     public function detachTenant(User $user, Tenant $tenant): RedirectResponse
     {
-        abort_unless($user->tenant_id === null && ! $user->isCustomer(), 404);
+        abort_unless($user->isPlatformStaffMember(), 404);
         SuperAdminGuard::abortIfProtected($user);
 
         $user->assignedTenants()->detach($tenant->id);

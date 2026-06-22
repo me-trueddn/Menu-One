@@ -8,6 +8,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Services\MailConfigService;
 use App\Services\PasswordLifecycleService;
+use App\Services\TwoFactorNotificationService;
 use App\Support\MailExceptionFormatter;
 use App\Support\SecurityPolicy;
 use Illuminate\Http\RedirectResponse;
@@ -18,7 +19,10 @@ use Illuminate\View\View;
 
 class CustomerController extends Controller
 {
-    public function __construct(private PasswordLifecycleService $passwordLifecycle) {}
+    public function __construct(
+        private PasswordLifecycleService $passwordLifecycle,
+        private TwoFactorNotificationService $twoFactorNotifications,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -121,7 +125,14 @@ class CustomerController extends Controller
             return back()->with('error', __('menu.two_factor_disabled_globally'));
         }
 
-        $customer->update(['two_factor_enabled' => ! $customer->two_factor_enabled]);
+        $enabled = ! $customer->two_factor_enabled;
+        $customer->update(['two_factor_enabled' => $enabled]);
+
+        try {
+            $this->twoFactorNotifications->notifyStatusChange($customer->fresh(), $enabled);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return back()->with('success', __('menu.messages.updated'));
     }

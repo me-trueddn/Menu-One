@@ -41,4 +41,9 @@
     </div>
     @if($staff->hasPages())<div class="card-footer">{{ $staff->links() }}</div>@endif
 </div>
+
+@include('theme::partials.staff-invitations-panel', [
+    'invitations' => $invitations,
+    'revokeRoute' => fn ($invitation) => route('admin.staff.invitations.revoke', $invitation),
+])
 @endsection

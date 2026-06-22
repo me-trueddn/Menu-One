@@ -22,10 +22,15 @@
                 </select>
             </div>
             <div class="col-md-3">
-                <button type="submit" class="btn btn-primary w-100" id="platformStaffSubmit" disabled>{{ __('menu.add_staff') }}</button>
+                <button type="submit" class="btn btn-primary w-100" id="platformStaffSubmit" disabled>{{ __('menu.send_invitation') }}</button>
             </div>
         </form>
         <div id="platformStaffResult" class="alert d-none small"></div>
+
+        @include('theme::partials.staff-invitations-panel', [
+            'invitations' => $tenant->staffInvitations,
+            'revokeRoute' => fn ($invitation) => route('platform.tenants.staff.invitations.revoke', [$tenant, $invitation]),
+        ])
 
         <div class="table-responsive">
             <table class="table table-sm mb-0">

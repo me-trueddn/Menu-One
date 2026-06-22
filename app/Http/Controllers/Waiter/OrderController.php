@@ -80,14 +80,14 @@ class OrderController extends Controller
     public function close(Order $order): RedirectResponse
     {
         try {
-            $this->orders->requestPayment($order);
+            $this->orders->voidEmptyOrder($order);
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
         }
 
         return redirect()
             ->route('waiter.tables.index')
-            ->with('success', __('menu.bill_sent_to_cashier'));
+            ->with('success', __('menu.empty_bill_closed'));
     }
 
     public function markServed(Order $order, OrderItem $item): RedirectResponse

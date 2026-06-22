@@ -6,8 +6,10 @@ use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\Tenant;
 use App\Services\PasswordLifecycleService;
 use App\Services\TenantLicenseService;
+use App\Services\TwoFactorNotificationService;
 use App\Services\UserCafeService;
 use App\Support\CompanyDefaults;
+use App\Support\ImageStorage;
 use App\Support\SecurityPolicy;
 use App\Support\TenantAccess;
 use App\Support\TenantIdGenerator;
@@ -24,6 +26,7 @@ class ProfileController extends Controller
         private PasswordLifecycleService $passwordLifecycle,
         private TenantLicenseService $licenses,
         private UserCafeService $cafes,
+        private TwoFactorNotificationService $twoFactorNotifications,
     ) {}
 
     public function edit(Request $request): View
@@ -107,7 +110,14 @@ class ProfileController extends Controller
         }
 
         $user = $request->user();
-        $user->update(['two_factor_enabled' => ! $user->two_factor_enabled]);
+        $enabled = ! $user->two_factor_enabled;
+        $user->update(['two_factor_enabled' => $enabled]);
+
+        try {
+            $this->twoFactorNotifications->notifyStatusChange($user->fresh(), $enabled);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return Redirect::route('profile.edit', ['tab' => 'security'])
             ->with('success', __('menu.messages.updated'));
@@ -144,7 +154,7 @@ class ProfileController extends Controller
         ]);
 
         if ($request->hasFile('logo')) {
-            $tenant->update(['logo_path' => $request->file('logo')->store('tenant-logos', 'public')]);
+            $tenant->update(['logo_path' => ImageStorage::storeCustomerFile($request->file('logo'), $tenant->id)]);
         }
 
         $this->licenses->assignDefault($tenant);

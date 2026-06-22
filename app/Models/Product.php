@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\Branding;
+use App\Support\ImageStorage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -11,11 +13,27 @@ class Product extends Model
 {
     use BelongsToTenant;
 
+    public const UNIT_PIECE = 'piece';
+
+    public const UNIT_KG = 'kg';
+
+    public const UNIT_LITER = 'liter';
+
+    public const UNIT_PORTION = 'portion';
+
     protected $fillable = [
         'tenant_id',
         'category_id',
         'name',
+        'code',
+        'description',
+        'barcode',
+        'unit_type',
         'price',
+        'purchase_price',
+        'vat_rate',
+        'image_path',
+        'extras',
         'is_active',
     ];
 
@@ -23,8 +41,32 @@ class Product extends Model
     {
         return [
             'price' => 'decimal:2',
+            'purchase_price' => 'decimal:2',
+            'vat_rate' => 'integer',
+            'extras' => 'array',
             'is_active' => 'boolean',
         ];
+    }
+
+    /** @return array<string, string> */
+    public static function unitTypes(): array
+    {
+        return [
+            self::UNIT_PIECE => __('menu.product_unit_piece'),
+            self::UNIT_KG => __('menu.product_unit_kg'),
+            self::UNIT_LITER => __('menu.product_unit_liter'),
+            self::UNIT_PORTION => __('menu.product_unit_portion'),
+        ];
+    }
+
+    public function extra(string $key, mixed $default = null): mixed
+    {
+        return data_get($this->extras, $key, $default);
+    }
+
+    public function imageUrl(): string
+    {
+        return ImageStorage::url($this->image_path) ?? Branding::defaultLogoUrl();
     }
 
     public function category(): BelongsTo

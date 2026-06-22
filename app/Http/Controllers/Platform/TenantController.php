@@ -8,11 +8,11 @@ use App\Models\Tenant;
 use App\Services\SupportSessionService;
 use App\Services\TenantLicenseService;
 use App\Support\CompanyDefaults;
+use App\Support\ImageStorage;
 use App\Support\TenantAccess;
 use App\Support\TenantIdGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class TenantController extends Controller
@@ -56,7 +56,7 @@ class TenantController extends Controller
         ]));
 
         if ($request->hasFile('logo')) {
-            $tenant->update(['logo_path' => $request->file('logo')->store('tenant-logos', 'public')]);
+            $tenant->update(['logo_path' => ImageStorage::storeCustomerFile($request->file('logo'), $tenant->id)]);
         }
 
         $this->licenses->assignDefault($tenant);
@@ -68,7 +68,13 @@ class TenantController extends Controller
 
     public function edit(Tenant $tenant): View
     {
-        $tenant->load(['owner', 'stoppedBy', 'currentLicense.licenseType', 'staffUsers.roles']);
+        $tenant->load([
+            'owner',
+            'stoppedBy',
+            'currentLicense.licenseType',
+            'staffUsers.roles',
+            'staffInvitations' => fn ($query) => $query->recent()->with(['user', 'invitedBy', 'revokedBy'])->latest(),
+        ]);
 
         return view('theme::pages.platform.tenants.edit', [
             'tenant' => $tenant,
@@ -86,11 +92,8 @@ class TenantController extends Controller
         $tenant->update($validated);
 
         if ($request->hasFile('logo')) {
-            if ($tenant->logo_path) {
-                Storage::disk('public')->delete($tenant->logo_path);
-            }
-
-            $tenant->update(['logo_path' => $request->file('logo')->store('tenant-logos', 'public')]);
+            ImageStorage::delete($tenant->logo_path);
+            $tenant->update(['logo_path' => ImageStorage::storeCustomerFile($request->file('logo'), $tenant->id)]);
         }
 
         if ($licenseTypeId) {

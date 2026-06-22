@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
+use App\Models\TenantStaffInvitation;
 use App\Models\User;
 use App\Services\CafeStaffService;
+use App\Services\StaffInvitationService;
 use App\Services\UserImpersonationService;
 use App\Support\TenantAccess;
 use Illuminate\Http\JsonResponse;
@@ -16,6 +18,7 @@ class TenantStaffController extends Controller
 {
     public function __construct(
         private CafeStaffService $staff,
+        private StaffInvitationService $invitations,
         private UserImpersonationService $impersonation,
     ) {}
 
@@ -40,9 +43,9 @@ class TenantStaffController extends Controller
             return back()->withInput()->withErrors(['email' => __('menu.staff_user_not_found')]);
         }
 
-        $this->staff->attach($tenant, $user, $validated['role']);
+        $this->invitations->invite($tenant, $user, $validated['role'], $this->authUser());
 
-        return back()->with('success', __('menu.staff_attached'));
+        return back()->with('success', __('menu.staff_invitation_sent'));
     }
 
     public function update(Request $request, Tenant $tenant, User $user): RedirectResponse
@@ -64,6 +67,15 @@ class TenantStaffController extends Controller
         $this->staff->detach($tenant, $user);
 
         return back()->with('success', __('menu.staff_removed'));
+    }
+
+    public function revokeInvitation(Tenant $tenant, TenantStaffInvitation $invitation): RedirectResponse
+    {
+        abort_unless($invitation->tenant_id === $tenant->id, 404);
+
+        $this->invitations->revoke($invitation, $this->authUser());
+
+        return back()->with('success', __('menu.staff_invitation_revoked'));
     }
 
     public function impersonate(Tenant $tenant, User $user): RedirectResponse

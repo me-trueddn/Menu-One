@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Notifications\ResetPasswordNotification;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
@@ -218,9 +219,30 @@ class User extends Authenticatable
             ->whereNull('tenant_id')
             ->where(function (Builder $builder) {
                 $builder
-                    ->whereHas('roles', fn (Builder $roleQuery) => $roleQuery->where('name', '!=', 'user'))
-                    ->orWhereDoesntHave('roles');
+                    ->where('is_super_admin', true)
+                    ->orWhere(function (Builder $staff) {
+                        $staff
+                            ->whereHas('roles')
+                            ->whereDoesntHave('roles', fn (Builder $roleQuery) => $roleQuery->where('name', 'user'));
+                    });
             });
+    }
+
+    public function isPlatformStaffMember(): bool
+    {
+        if ($this->tenant_id !== null) {
+            return false;
+        }
+
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        if ($this->isCustomer()) {
+            return false;
+        }
+
+        return $this->roles()->exists();
     }
 
     public function scopeCustomers(Builder $query): Builder
@@ -289,5 +311,10 @@ class User extends Authenticatable
         }
 
         return 'login';
+    }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
     }
 }

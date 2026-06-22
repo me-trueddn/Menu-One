@@ -44,20 +44,30 @@
         <div class="card">
             <div class="card-header"><h6 class="mb-0">{{ __('menu.kitchen') }}</h6></div>
             <div class="card-body">
-                <h6 class="small text-muted">{{ __('menu.kitchen_pending') }} ({{ $kitchenItems->count() }})</h6>
-                @forelse($kitchenItems as $item)
-                    <div class="border rounded p-2 mb-2 small">
-                        <strong>{{ $item->order->cafeTable?->name }}</strong> · {{ $item->product?->name }} × {{ $item->qty }}
-                        <span class="badge text-bg-warning">{{ $item->status->label() }}</span>
+                <h6 class="small text-muted">{{ __('menu.kitchen_pending') }} ({{ $kitchenTables->sum(fn ($g) => $g['items']->count()) }})</h6>
+                @forelse($kitchenTables as $tableGroup)
+                    <div class="border rounded p-2 mb-2">
+                        <div class="fw-semibold mb-1">{{ $tableGroup['table'] }}</div>
+                        @foreach($tableGroup['items'] as $item)
+                            <div class="small d-flex justify-content-between align-items-center py-1 {{ ! $loop->last ? 'border-bottom' : '' }}">
+                                <span>{{ $item->product?->name }} × {{ $item->qty }}</span>
+                                <span class="badge text-bg-warning">{{ $item->status->label() }}</span>
+                            </div>
+                        @endforeach
                     </div>
                 @empty
                     <p class="text-muted small">{{ __('menu.no_kitchen_items') }}</p>
                 @endforelse
-                <h6 class="small text-muted mt-3">{{ __('menu.kitchen_ready') }} ({{ $readyItems->count() }})</h6>
-                @forelse($readyItems as $item)
-                    <div class="border rounded p-2 mb-2 small">
-                        <strong>{{ $item->order->cafeTable?->name }}</strong> · {{ $item->product?->name }}
-                        <span class="badge text-bg-success">{{ $item->status->label() }}</span>
+                <h6 class="small text-muted mt-3">{{ __('menu.kitchen_ready') }} ({{ $readyTables->sum(fn ($g) => $g['items']->count()) }})</h6>
+                @forelse($readyTables as $tableGroup)
+                    <div class="border rounded p-2 mb-2">
+                        <div class="fw-semibold mb-1">{{ $tableGroup['table'] }}</div>
+                        @foreach($tableGroup['items'] as $item)
+                            <div class="small d-flex justify-content-between align-items-center py-1 {{ ! $loop->last ? 'border-bottom' : '' }}">
+                                <span>{{ $item->product?->name }} × {{ $item->qty }}</span>
+                                <span class="badge text-bg-success">{{ $item->status->label() }}</span>
+                            </div>
+                        @endforeach
                     </div>
                 @empty
                     <p class="text-muted small">{{ __('menu.no_ready_items') }}</p>

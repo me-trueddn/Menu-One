@@ -46,22 +46,6 @@
                 @empty
                     <p class="text-muted p-3 mb-0">{{ __('menu.no_reservations_for_table') }}</p>
                 @endforelse
-                @if($recentCompletedReservations->isNotEmpty())
-                    <div class="border-top px-3 py-2 bg-light small fw-semibold text-muted">{{ __('menu.reservation_recent_completed') }}</div>
-                    @foreach($recentCompletedReservations as $reservation)
-                        <div class="border-bottom p-3">
-                            <span class="badge text-bg-secondary">{{ __('menu.reservation_completed') }}</span>
-                            <div class="mt-2"><strong>{{ $reservation->guest_name }}</strong></div>
-                            @if($reservation->guest_phone)
-                                <div class="mt-1">@include('theme::pages.reservations._call', ['reservation' => $reservation])</div>
-                            @endif
-                            <div>{{ $reservation->party_size }} {{ __('menu.seats') }}</div>
-                            <div class="text-muted small mt-1">
-                                @include('theme::pages.reservations._period', ['reservation' => $reservation])
-                            </div>
-                        </div>
-                    @endforeach
-                @endif
             </div>
         </div>
 
@@ -112,6 +96,11 @@
             <div class="card-footer d-flex gap-2 flex-wrap">
                 @if($activeOrder->status->value === 'awaiting_payment')
                     <span class="text-muted">{{ __('menu.awaiting_cashier_payment') }}</span>
+                @elseif($activeOrder->items->isEmpty())
+                    <form method="POST" action="{{ route('waiter.orders.close', $activeOrder) }}"
+                          onsubmit="return confirm('{{ __('menu.confirm_close_empty_bill') }}')">@csrf
+                        <button type="submit" class="btn btn-outline-secondary">{{ __('menu.close_empty_bill') }}</button>
+                    </form>
                 @else
                 <form method="POST" action="{{ route('waiter.orders.send', $activeOrder) }}">@csrf
                     <button class="btn btn-warning">{{ __('menu.send_to_kitchen') }}</button>
@@ -143,11 +132,16 @@
                         <div class="row">
                         @foreach($category->products as $product)
                             <div class="col-md-6 mb-2 product-item" data-name="{{ mb_strtolower($product->name) }}" data-category="{{ mb_strtolower($category->name) }}">
-                                <form method="POST" action="{{ route('waiter.orders.items.store', $activeOrder) }}" class="border rounded p-2">@csrf
+                                <form method="POST" action="{{ route('waiter.orders.items.store', $activeOrder) }}" class="border rounded p-2 h-100">@csrf
                                     <input type="hidden" name="product_id" value="{{ $product->id }}">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div><strong>{{ $product->name }}</strong><br><small>{{ number_format($product->price, 2) }} ₺</small></div>
-                                        <div class="d-flex gap-1">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img src="{{ $product->imageUrl() }}" alt="{{ $product->name }}"
+                                             class="product-picker-thumb flex-shrink-0 rounded">
+                                        <div class="flex-grow-1 min-w-0">
+                                            <div class="fw-semibold text-truncate">{{ $product->name }}</div>
+                                            <div class="small text-muted">{{ number_format($product->price, 2) }} ₺</div>
+                                        </div>
+                                        <div class="d-flex gap-1 flex-shrink-0">
                                             <input type="number" name="qty" value="1" min="1" max="99" class="form-control form-control-sm" style="width:60px">
                                             <button class="btn btn-sm btn-primary">+</button>
                                         </div>
@@ -169,6 +163,16 @@
 @endsection
 
 @if($activeOrder && $activeOrder->status->value !== 'awaiting_payment')
+@push('styles')
+<style>
+    .product-picker-thumb {
+        width: 52px;
+        height: 52px;
+        object-fit: cover;
+        background: var(--bs-tertiary-bg);
+    }
+</style>
+@endpush
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {

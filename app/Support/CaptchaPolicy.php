@@ -3,7 +3,6 @@
 namespace App\Support;
 
 use App\Models\Setting;
-use Illuminate\Support\Facades\Crypt;
 
 class CaptchaPolicy
 {
@@ -19,7 +18,6 @@ class CaptchaPolicy
         return [
             'captcha_provider' => 'none',
             'captcha_site_key' => '',
-            'captcha_secret_key' => '',
             'captcha_login_enabled' => '0',
             'captcha_register_enabled' => '0',
             'captcha_password_reset_enabled' => '0',
@@ -27,19 +25,29 @@ class CaptchaPolicy
         ];
     }
 
+    /** @return array<string, string> */
+    public static function stored(): array
+    {
+        return Setting::mergedGroup('site', static::defaults());
+    }
+
     public static function bool(string $key): bool
     {
-        return filter_var(Setting::getFilled($key, static::defaults()[$key] ?? '0'), FILTER_VALIDATE_BOOLEAN);
+        $defaults = static::defaults();
+
+        return Setting::boolean($key, filter_var($defaults[$key] ?? '0', FILTER_VALIDATE_BOOLEAN));
     }
 
     public static function provider(): string
     {
-        return (string) Setting::getFilled('captcha_provider', 'none');
+        $provider = static::stored()['captcha_provider'] ?? 'none';
+
+        return in_array($provider, ['none', 'google', 'turnstile'], true) ? $provider : 'none';
     }
 
     public static function siteKey(): string
     {
-        return (string) Setting::getFilled('captcha_site_key', '');
+        return (string) (static::stored()['captcha_site_key'] ?? '');
     }
 
     public static function secretKey(): string
@@ -51,7 +59,7 @@ class CaptchaPolicy
         }
 
         try {
-            return Crypt::decryptString($encrypted);
+            return \Illuminate\Support\Facades\Crypt::decryptString($encrypted);
         } catch (\Throwable) {
             return '';
         }

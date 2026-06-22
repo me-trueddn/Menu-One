@@ -27,19 +27,7 @@ class SettingsSeeder extends Seeder
 
         SettingsDefaults::restoreEmptySiteValues();
 
-        $mail = [
-            'mail_mailer' => env('MAIL_MAILER', 'log'),
-            'mail_host' => env('MAIL_HOST', ''),
-            'mail_port' => env('MAIL_PORT', '587'),
-            'mail_username' => env('MAIL_USERNAME', ''),
-            'mail_password' => '',
-            'mail_encryption' => env('MAIL_ENCRYPTION', 'tls'),
-            'mail_from_address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-            'mail_from_name' => env('MAIL_FROM_NAME', config('app.name')),
-            'mail_timeout_seconds' => '15',
-        ];
-
-        foreach ($mail as $key => $value) {
+        foreach (SettingsDefaults::mailDefaults() as $key => $value) {
             Setting::setIfMissing($key, $value, 'mail');
         }
 

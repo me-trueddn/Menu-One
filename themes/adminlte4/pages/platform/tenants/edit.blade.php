@@ -23,9 +23,7 @@
                         <div class="col-md-6">
                             <label class="form-label">{{ __('menu.cafe_logo') }}</label>
                             <input type="file" name="logo" class="form-control" accept="image/*">
-                            @if($tenant->logo_path)
-                                <img src="{{ \App\Support\Branding::tenantLogoUrl($tenant->logo_path) }}" alt="" class="mt-2" style="height:48px">
-                            @endif
+                            <img src="{{ \App\Support\Branding::cafeLogoUrl($tenant) }}" alt="" class="mt-2" style="height:48px">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">{{ __('menu.assign_license') }}</label>

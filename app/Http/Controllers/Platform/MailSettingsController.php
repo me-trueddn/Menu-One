@@ -7,6 +7,8 @@ use App\Mail\TestMailConfiguration;
 use App\Models\Setting;
 use App\Services\MailConfigService;
 use App\Support\MailExceptionFormatter;
+use App\Support\SettingPersistence;
+use App\Support\SettingsDefaults;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
@@ -15,17 +17,30 @@ use Illuminate\View\View;
 
 class MailSettingsController extends Controller
 {
+    /** @var list<string> */
+    private const OPTIONAL_MAIL_KEYS = [
+        'mail_host',
+        'mail_port',
+        'mail_username',
+        'mail_from_address',
+        'mail_from_name',
+    ];
+
     public function edit(): View
     {
+        SettingsDefaults::ensureMailSettingsIfUnset();
+
+        $mail = Setting::mergedGroup('mail', SettingsDefaults::mailDefaults());
+
         $settings = [
-            'mail_mailer' => Setting::get('mail_mailer', env('MAIL_MAILER', 'log')),
-            'mail_host' => Setting::get('mail_host', env('MAIL_HOST', '')),
-            'mail_port' => Setting::get('mail_port', env('MAIL_PORT', '587')),
-            'mail_username' => Setting::get('mail_username', env('MAIL_USERNAME', '')),
-            'mail_encryption' => Setting::get('mail_encryption', env('MAIL_ENCRYPTION', 'tls')),
-            'mail_from_address' => Setting::get('mail_from_address', env('MAIL_FROM_ADDRESS', '')),
-            'mail_from_name' => Setting::get('mail_from_name', env('MAIL_FROM_NAME', '')),
-            'mail_timeout_seconds' => Setting::get('mail_timeout_seconds', '15'),
+            'mail_mailer' => Setting::getFilled('mail_mailer', $mail['mail_mailer'] ?? 'log'),
+            'mail_host' => Setting::getFilled('mail_host', $mail['mail_host'] ?? ''),
+            'mail_port' => Setting::getFilled('mail_port', $mail['mail_port'] ?? '587'),
+            'mail_username' => Setting::getFilled('mail_username', $mail['mail_username'] ?? ''),
+            'mail_encryption' => Setting::getFilled('mail_encryption', $mail['mail_encryption'] ?? 'tls'),
+            'mail_from_address' => Setting::getFilled('mail_from_address', $mail['mail_from_address'] ?? ''),
+            'mail_from_name' => Setting::getFilled('mail_from_name', $mail['mail_from_name'] ?? ''),
+            'mail_timeout_seconds' => Setting::getFilled('mail_timeout_seconds', $mail['mail_timeout_seconds'] ?? '15'),
             'has_password' => (bool) Setting::get('mail_password'),
         ];
 
@@ -37,6 +52,15 @@ class MailSettingsController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
+        $request->merge([
+            'mail_host' => $request->input('mail_host') ?: null,
+            'mail_port' => $request->input('mail_port') ?: null,
+            'mail_username' => $request->input('mail_username') ?: null,
+            'mail_from_address' => $request->input('mail_from_address') ?: null,
+            'mail_from_name' => $request->input('mail_from_name') ?: null,
+            'mail_password' => $request->input('mail_password') ?: null,
+        ]);
+
         $validated = $request->validate([
             'mail_mailer' => ['required', 'in:smtp,log,sendmail'],
             'mail_host' => ['nullable', 'string', 'max:255'],
@@ -51,14 +75,22 @@ class MailSettingsController extends Controller
 
         $pairs = [
             'mail_mailer' => $validated['mail_mailer'],
-            'mail_host' => $validated['mail_host'] ?? '',
-            'mail_port' => (string) ($validated['mail_port'] ?? 587),
-            'mail_username' => $validated['mail_username'] ?? '',
-            'mail_encryption' => $validated['mail_encryption'] === 'none' ? '' : ($validated['mail_encryption'] ?? ''),
-            'mail_from_address' => $validated['mail_from_address'] ?? '',
-            'mail_from_name' => $validated['mail_from_name'] ?? '',
             'mail_timeout_seconds' => (string) $validated['mail_timeout_seconds'],
         ];
+
+        foreach (self::OPTIONAL_MAIL_KEYS as $key) {
+            $incoming = SettingPersistence::incomingOrSkip($key, $validated[$key] ?? null);
+
+            if ($incoming !== null) {
+                $pairs[$key] = is_int($incoming) ? (string) $incoming : $incoming;
+            }
+        }
+
+        if (SettingPersistence::isPresent($validated['mail_encryption'] ?? null)) {
+            $pairs['mail_encryption'] = $validated['mail_encryption'] === 'none'
+                ? ''
+                : $validated['mail_encryption'];
+        }
 
         if (! empty($validated['mail_password'])) {
             $pairs['mail_password'] = Crypt::encryptString($validated['mail_password']);

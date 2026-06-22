@@ -11,6 +11,9 @@
     <link rel="icon" href="{{ \App\Support\Branding::faviconUrl() }}">
     @vite(['resources/css/themes/adminlte4.css', 'resources/js/themes/adminlte4.js'])
     @stack('styles')
+    @auth
+    @include('theme::partials.branding-styles')
+    @endauth
 </head>
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
 @php($currentUser = auth()->user())

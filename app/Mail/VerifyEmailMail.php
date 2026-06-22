@@ -6,6 +6,7 @@ use App\Models\EmailVerificationToken;
 use App\Models\User;
 use App\Support\EmailTemplatePolicy;
 use App\Support\EmailTemplateRenderer;
+use App\Support\EmailTemplateVariables;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -23,13 +24,12 @@ class VerifyEmailMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $subject = EmailTemplateRenderer::render(EmailTemplatePolicy::verificationSubject(), [
+        $subject = EmailTemplateRenderer::render(EmailTemplatePolicy::verificationSubject(), array_merge(EmailTemplateVariables::base(), [
             'name' => $this->user->name,
             'email' => $this->user->email,
             'verify_url' => route('verification.custom', ['token' => $this->token->token]),
             'expires_minutes' => (string) EmailTemplatePolicy::verificationExpiresMinutes(),
-            'site_name' => config('app.name'),
-        ]);
+        ]));
 
         // Subject must be plain text — strip any HTML/BBCode artifacts.
         $subject = trim(strip_tags($subject));
@@ -43,13 +43,12 @@ class VerifyEmailMail extends Mailable
     {
         $verifyUrl = route('verification.custom', ['token' => $this->token->token]);
 
-        $body = EmailTemplateRenderer::render(EmailTemplatePolicy::verificationBody(), [
+        $body = EmailTemplateRenderer::render(EmailTemplatePolicy::verificationBody(), array_merge(EmailTemplateVariables::base(), [
             'name' => $this->user->name,
             'email' => $this->user->email,
             'verify_url' => $verifyUrl,
             'expires_minutes' => (string) EmailTemplatePolicy::verificationExpiresMinutes(),
-            'site_name' => config('app.name'),
-        ]);
+        ]));
 
         return new Content(
             htmlString: $body,
