@@ -18,8 +18,10 @@ class Order extends Model
         'user_id',
         'status',
         'total',
+        'discount_percent',
         'payment_method',
         'split_count',
+        'split_paid_count',
         'closed_at',
     ];
 
@@ -28,7 +30,9 @@ class Order extends Model
         return [
             'status' => OrderStatus::class,
             'total' => 'decimal:2',
+            'discount_percent' => 'decimal:2',
             'split_count' => 'integer',
+            'split_paid_count' => 'integer',
             'closed_at' => 'datetime',
         ];
     }
@@ -55,6 +59,54 @@ class Order extends Model
             ->value('aggregate');
 
         $this->update(['total' => $total ?? 0]);
+    }
+
+    public function discountPercent(): float
+    {
+        return (float) ($this->discount_percent ?? 0);
+    }
+
+    public function discountAmount(): float
+    {
+        return round((float) $this->total * $this->discountPercent() / 100, 2);
+    }
+
+    public function amountDue(?float $discountPercent = null): float
+    {
+        $percent = $discountPercent ?? $this->discountPercent();
+
+        return round((float) $this->total * (1 - min(100, max(0, $percent)) / 100), 2);
+    }
+
+    public function splitPaidCount(): int
+    {
+        return (int) ($this->split_paid_count ?? 0);
+    }
+
+    public function isSplitPaymentInProgress(): bool
+    {
+        return $this->split_count > 0
+            && $this->splitPaidCount() > 0
+            && $this->splitPaidCount() < $this->split_count;
+    }
+
+    public function nextPaymentAmount(): float
+    {
+        $due = $this->amountDue();
+        $split = (int) $this->split_count;
+
+        if ($split <= 0) {
+            return $due;
+        }
+
+        $paid = $this->splitPaidCount();
+        $perPerson = round($due / $split, 2);
+
+        if ($paid >= $split - 1) {
+            return round($due - $perPerson * max(0, $split - 1), 2);
+        }
+
+        return $perPerson;
     }
 
     public function perPersonTotal(): float

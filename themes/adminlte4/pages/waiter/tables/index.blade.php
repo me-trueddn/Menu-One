@@ -1,50 +1,87 @@
 @extends('theme::layouts.app')
-@section('title', 'Masalar')
+@section('title', __('menu.tables'))
 @section('page-title', __('menu.waiter').' — '.__('menu.tables'))
 @section('content')
 <div class="d-flex justify-content-end mb-3">
     <a href="{{ route('reservations.index') }}" class="btn btn-outline-primary btn-sm">{{ __('menu.reservations') }}</a>
 </div>
-<div class="row">
-@foreach($tables as $table)
-    @php($reservation = $table->nextReservation())
-    @php($displayStatus = $table->displayStatus())
-    <div class="col-md-3 col-sm-6 mb-3">
-        <a href="{{ route('waiter.tables.show', $table) }}" class="text-decoration-none">
-            <div class="card h-100 border-{{ $displayStatus->value === 'occupied' ? 'danger' : ($displayStatus->value === 'reserved' ? 'warning' : 'success') }}">
-                <div class="card-body text-center">
-                    <h4 class="card-title">{{ $table->name }}</h4>
-                    <p class="mb-1"><span class="badge {{ $displayStatus->badgeClass() }}">{{ $displayStatus->label() }}</span></p>
-                    <small class="text-muted">{{ $table->capacity }} {{ __('menu.seats') }}</small>
-                    @if($reservation)
-                        <div class="mt-2 small text-start border-top pt-2">
-                            <span class="badge text-bg-warning">{{ __('menu.reserved') }}</span>
-                            <div class="mt-1"><strong>{{ $reservation->guest_name }}</strong></div>
-                            <div>{{ $reservation->party_size }} {{ __('menu.seats') }}</div>
-                            <div class="text-muted">
-                                {{ $reservation->starts_at->format('d.m.Y H:i') }}
-                                – {{ $reservation->ends_at->format('H:i') }}
-                            </div>
-                        </div>
-                    @endif
-                </div>
+
+@if($categories->isEmpty() && $uncategorizedTables->isEmpty())
+    <p class="text-muted">{{ __('menu.no_tables') }}</p>
+@else
+    @foreach($categories as $category)
+        @if($category->tables->isNotEmpty())
+            <h5 class="mb-3 mt-2">{{ $category->name }}</h5>
+            <div class="row mb-4">
+                @foreach($category->tables as $table)
+                    @include('theme::partials.table-card', ['table' => $table, 'readyCountsByTable' => $readyCountsByTable])
+                @endforeach
             </div>
-        </a>
-    </div>
-@endforeach
-</div>
-<div id="ready-alert" class="alert alert-info d-none"></div>
+        @endif
+    @endforeach
+
+    @if($uncategorizedTables->isNotEmpty())
+        @if($categories->isNotEmpty())
+            <h5 class="mb-3 mt-2">{{ __('menu.uncategorized_tables') }}</h5>
+        @endif
+        <div class="row">
+            @foreach($uncategorizedTables as $table)
+                @include('theme::partials.table-card', ['table' => $table, 'readyCountsByTable' => $readyCountsByTable])
+            @endforeach
+        </div>
+    @endif
+@endif
+
+<div id="ready-alert" class="alert alert-warning d-none"></div>
 @endsection
 @push('scripts')
 <script>
-setInterval(async () => {
+const readyCountMany = @json(trans_choice('menu.table_ready_items_count', 2, ['count' => ':count']));
+
+const formatReadyCount = (count) => readyCountMany.replace(':count', count);
+
+const updateTableCards = (tables) => {
+    document.querySelectorAll('[data-waiter-table-card]').forEach((wrapper) => {
+        const tableId = wrapper.dataset.tableId;
+        const count = Number(tables[tableId] || 0);
+        const card = wrapper.querySelector('[data-table-card]');
+        const banner = wrapper.querySelector('[data-ready-banner]');
+        const countEl = wrapper.querySelector('[data-ready-count]');
+        const status = wrapper.dataset.tableStatus;
+
+        card.classList.remove('border-warning', 'border-danger', 'border-success', 'bg-warning-subtle');
+
+        if (count > 0) {
+            card.classList.add('border-warning', 'bg-warning-subtle');
+            banner.classList.remove('d-none');
+            countEl.textContent = formatReadyCount(count);
+            return;
+        }
+
+        banner.classList.add('d-none');
+        countEl.textContent = '';
+
+        const borderClass = status === 'occupied' ? 'border-danger' : (status === 'reserved' ? 'border-warning' : 'border-success');
+        card.classList.add(borderClass);
+    });
+};
+
+const pollReadyItems = async () => {
     const res = await fetch('{{ route('waiter.ready-items.poll') }}');
     const data = await res.json();
+
+    updateTableCards(data.tables || {});
+
     const el = document.getElementById('ready-alert');
     if (data.items.length) {
         el.classList.remove('d-none');
         el.textContent = '{{ __('menu.ready_orders') }}: ' + data.items.map(i => i.table + ' - ' + i.product).join(', ');
-    } else { el.classList.add('d-none'); }
-}, 5000);
+    } else {
+        el.classList.add('d-none');
+    }
+};
+
+pollReadyItems();
+setInterval(pollReadyItems, 5000);
 </script>
 @endpush

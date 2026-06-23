@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Cashier;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\DiningTable;
 use App\Support\PaymentConfig;
+use App\Support\TableGrouping;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -19,10 +21,14 @@ class TableController extends Controller
             $query->where('name', 'like', '%'.$search.'%');
         }
 
-        $tables = $query->with(['payableOrder', 'upcomingReservations'])->get();
+        $tables = $query->with(['payableOrder', 'upcomingReservations', 'tableCategory'])->get();
+
+        $grouped = TableGrouping::forTables($tables);
 
         return view('theme::pages.cashier.tables.index', [
             'tables' => $tables,
+            'categories' => $grouped['categories'],
+            'uncategorizedTables' => $grouped['uncategorized'],
             'search' => $search,
         ]);
     }

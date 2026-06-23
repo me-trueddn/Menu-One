@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Models\UserLoginToken;
 use App\Support\SecurityPolicy;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class UserLoginTokenService
@@ -67,5 +69,22 @@ class UserLoginTokenService
     public function revoke(User $user): void
     {
         UserLoginToken::query()->where('user_id', $user->id)->delete();
+    }
+
+    public function terminateUserSessions(User $user): void
+    {
+        $this->revoke($user);
+        $this->deleteSessionRowsForUser($user->id);
+    }
+
+    public function deleteSessionRowsForUser(int|string $userId): void
+    {
+        $table = config('session.table', 'sessions');
+
+        if (! Schema::hasTable($table)) {
+            return;
+        }
+
+        DB::table($table)->where('user_id', $userId)->delete();
     }
 }

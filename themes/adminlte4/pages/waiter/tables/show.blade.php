@@ -69,7 +69,22 @@
                     @foreach($activeOrder->items as $item)
                         <tr>
                             <td>{{ $item->product->name }}</td>
-                            <td>{{ $item->qty }}</td>
+                            <td>
+                                @if($item->status->value === 'pending')
+                                    <form method="POST" action="{{ route('waiter.orders.items.update', [$activeOrder, $item]) }}"
+                                          class="d-inline-flex align-items-center gap-1">
+                                        @csrf @method('PATCH')
+                                        <input type="number" name="qty" value="{{ old('qty.'.$item->id, $item->qty) }}"
+                                               min="1" max="99" class="form-control form-control-sm" style="width:4.5rem"
+                                               aria-label="{{ __('menu.qty') }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-primary" title="{{ __('menu.update_qty') }}">
+                                            <i class="bi bi-check-lg"></i>
+                                        </button>
+                                    </form>
+                                @else
+                                    {{ $item->qty }}
+                                @endif
+                            </td>
                             <td><span class="badge text-bg-secondary">{{ $item->status->label() }}</span>
                                 @if($item->status->value === 'ready')
                                 <form method="POST" action="{{ route('waiter.orders.items.served', [$activeOrder, $item]) }}" class="d-inline">@csrf

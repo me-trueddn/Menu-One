@@ -87,6 +87,36 @@ class OrderService
         });
     }
 
+    public function updateItemQty(Order $order, OrderItem $item, int $qty): OrderItem
+    {
+        if ($order->status === OrderStatus::Closed) {
+            throw new InvalidArgumentException('Kapalı adisyonda ürün adedi güncellenemez.');
+        }
+
+        if ($order->status === OrderStatus::AwaitingPayment) {
+            throw new InvalidArgumentException('Ödeme bekleyen adisyonda ürün adedi güncellenemez.');
+        }
+
+        if ($item->order_id !== $order->id) {
+            throw new InvalidArgumentException('Ürün bu adisyona ait değil.');
+        }
+
+        if ($item->status !== OrderItemStatus::Pending) {
+            throw new InvalidArgumentException('Mutfağa gönderilmiş veya hazırlanan ürünün adedi güncellenemez.');
+        }
+
+        if ($qty < 1 || $qty > 99) {
+            throw new InvalidArgumentException('Adet 1 ile 99 arasında olmalıdır.');
+        }
+
+        return DB::transaction(function () use ($order, $item, $qty) {
+            $item->update(['qty' => $qty]);
+            $order->recalculateTotal();
+
+            return $item->fresh(['product']);
+        });
+    }
+
     public function sendToKitchen(Order $order): Order
     {
         if ($order->status === OrderStatus::AwaitingPayment) {
@@ -154,14 +184,56 @@ class OrderService
         });
     }
 
-    public function closeOrder(Order $order, ?string $paymentMethod = null, int $splitCount = 1): Order
+    public function recordPayment(Order $order, ?string $paymentMethod, int $splitCount, float $discountPercent): Order
     {
-        return DB::transaction(function () use ($order, $paymentMethod, $splitCount) {
+        return DB::transaction(function () use ($order, $paymentMethod, $splitCount, $discountPercent) {
+            if ($order->splitPaidCount() > 0) {
+                $splitCount = (int) $order->split_count;
+                $discountPercent = $order->discountPercent();
+            } else {
+                $splitCount = max(0, $splitCount);
+                $discountPercent = min(100, max(0, $discountPercent));
+
+                $order->update([
+                    'split_count' => $splitCount,
+                    'discount_percent' => $discountPercent,
+                ]);
+            }
+
+            if ($splitCount <= 0) {
+                return $this->closeOrder($order, $paymentMethod, 0, $discountPercent);
+            }
+
+            $paidCount = $order->splitPaidCount() + 1;
+
+            $order->update([
+                'split_paid_count' => $paidCount,
+                'payment_method' => $paymentMethod,
+            ]);
+
+            if ($paidCount >= $splitCount) {
+                return $this->closeOrder($order, $paymentMethod, $splitCount, $discountPercent);
+            }
+
+            return $order->fresh(['items.product', 'cafeTable']);
+        });
+    }
+
+    public function closeOrder(Order $order, ?string $paymentMethod = null, int $splitCount = 1, float $discountPercent = 0): Order
+    {
+        return DB::transaction(function () use ($order, $paymentMethod, $splitCount, $discountPercent) {
             $closedAt = now();
+            $percent = min(100, max(0, $discountPercent));
+            $finalTotal = $order->amountDue($percent);
+            $resolvedSplit = max(0, $splitCount);
+
             $order->update([
                 'status' => OrderStatus::Closed,
                 'payment_method' => $paymentMethod,
-                'split_count' => max(0, $splitCount),
+                'split_count' => $resolvedSplit,
+                'split_paid_count' => $resolvedSplit > 0 ? $resolvedSplit : 0,
+                'discount_percent' => $percent,
+                'total' => $finalTotal,
                 'closed_at' => $closedAt,
             ]);
             $table = $order->cafeTable;

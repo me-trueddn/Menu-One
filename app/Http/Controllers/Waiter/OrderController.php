@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Waiter;
 
 use App\Enums\OrderItemStatus;
-use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\DiningTable;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Services\KitchenService;
 use App\Services\OrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -18,7 +18,10 @@ use Illuminate\View\View;
 
 class OrderController extends Controller
 {
-    public function __construct(protected OrderService $orders) {}
+    public function __construct(
+        protected OrderService $orders,
+        protected KitchenService $kitchen,
+    ) {}
 
     public function create(DiningTable $table): RedirectResponse
     {
@@ -55,6 +58,23 @@ class OrderController extends Controller
         }
 
         return back()->with('success', __('menu.item_removed'));
+    }
+
+    public function updateItem(Request $request, Order $order, OrderItem $item): RedirectResponse
+    {
+        abort_unless($item->order_id === $order->id, 404);
+
+        $validated = $request->validate([
+            'qty' => ['required', 'integer', 'min:1', 'max:99'],
+        ]);
+
+        try {
+            $this->orders->updateItemQty($order, $item, $validated['qty']);
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', __('menu.item_qty_updated'));
     }
 
     public function sendToKitchen(Order $order): RedirectResponse
@@ -108,19 +128,18 @@ class OrderController extends Controller
 
     public function pollReadyItems(): JsonResponse
     {
-        $items = OrderItem::query()
-            ->with(['product', 'order.cafeTable'])
-            ->where('status', OrderItemStatus::Ready)
-            ->whereHas('order', fn ($q) => $q->whereIn('status', OrderStatus::payableValues()))
-            ->get()
-            ->map(fn ($item) => [
-                'id' => $item->id,
-                'order_id' => $item->order_id,
-                'table' => $item->order->cafeTable->name,
-                'product' => $item->product->name,
-                'qty' => $item->qty,
-            ]);
+        $items = $this->kitchen->readyItems()->map(fn (OrderItem $item) => [
+            'id' => $item->id,
+            'order_id' => $item->order_id,
+            'table_id' => $item->order->cafe_table_id,
+            'table' => $item->order->cafeTable->name,
+            'product' => $item->product->name,
+            'qty' => $item->qty,
+        ]);
 
-        return response()->json(['items' => $items]);
+        return response()->json([
+            'items' => $items,
+            'tables' => $this->kitchen->readyCountsByTableId(),
+        ]);
     }
 }

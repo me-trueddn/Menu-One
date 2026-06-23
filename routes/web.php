@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\OperationsController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Admin\StaffController as AdminStaffController;
+use App\Http\Controllers\Admin\TableCategoryController as AdminTableCategoryController;
 use App\Http\Controllers\Cashier\PaymentController as CashierPaymentController;
 use App\Http\Controllers\Cashier\TableController as CashierTableController;
 use App\Http\Controllers\HomeController;
@@ -90,6 +91,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('staff/lookup', [AdminStaffController::class, 'lookup'])->name('staff.lookup');
         Route::delete('staff/invitations/{invitation}', [AdminStaffController::class, 'revokeInvitation'])->name('staff.invitations.revoke');
         Route::resource('tables', AdminDiningTableController::class)->except(['show']);
+        Route::resource('table-categories', AdminTableCategoryController::class)->except(['show', 'index']);
         Route::resource('categories', AdminCategoryController::class)->except(['show']);
         Route::resource('products', AdminProductController::class)->except(['show']);
         Route::resource('staff', AdminStaffController::class)->except(['show']);
@@ -117,6 +119,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/tables/{table}', [WaiterTableController::class, 'show'])->name('tables.show');
         Route::post('/tables/{table}/orders', [WaiterOrderController::class, 'create'])->name('orders.create');
         Route::post('/orders/{order}/items', [WaiterOrderController::class, 'storeItem'])->name('orders.items.store');
+        Route::patch('/orders/{order}/items/{item}', [WaiterOrderController::class, 'updateItem'])->name('orders.items.update');
         Route::delete('/orders/{order}/items/{item}', [WaiterOrderController::class, 'removeItem'])->name('orders.items.destroy');
         Route::post('/orders/{order}/send', [WaiterOrderController::class, 'sendToKitchen'])->name('orders.send');
         Route::post('/orders/{order}/request-payment', [WaiterOrderController::class, 'requestPayment'])->name('orders.request-payment');

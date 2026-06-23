@@ -5,12 +5,16 @@ namespace App\Providers;
 use App\Models\DiningTable;
 use App\Models\OrderItem;
 use App\Models\Setting;
+use App\Models\TableCategory;
 use App\Models\User;
 use App\Services\SupportSessionService;
 use App\Services\UserImpersonationService;
+use App\Services\UserLoginTokenService;
 use App\Support\TenantAccess;
 use App\Support\SettingsDefaults;
 use App\Support\VersionManager;
+use Illuminate\Auth\Events\Logout;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
@@ -53,6 +57,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Route::bind('table', fn (string $value) => DiningTable::findOrFail($value));
+        Route::bind('table_category', fn (string $value) => TableCategory::findOrFail($value));
         Route::bind('staff', fn (string $value) => User::findOrFail($value));
         Route::bind('item', fn (string $value) => OrderItem::findOrFail($value));
         Route::bind('group', fn (string $value) => Role::findOrFail($value));
@@ -62,6 +67,22 @@ class AppServiceProvider extends ServiceProvider
         $this->applyBrandingDefaults();
         $this->registerSocialiteProviders();
         $this->applyAppVersion();
+        $this->registerLogoutSessionCleanup();
+    }
+
+    protected function registerLogoutSessionCleanup(): void
+    {
+        Event::listen(Logout::class, function (Logout $event): void {
+            if (! $event->user instanceof User) {
+                return;
+            }
+
+            $userId = $event->user->id;
+
+            App::terminating(function () use ($userId): void {
+                app(UserLoginTokenService::class)->deleteSessionRowsForUser($userId);
+            });
+        });
     }
 
     protected function applyAppVersion(): void

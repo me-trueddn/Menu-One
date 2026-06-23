@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Enums\ReservationStatus;
 use App\Enums\TableStatus;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
@@ -18,6 +19,7 @@ class DiningTable extends Model
 
     protected $fillable = [
         'tenant_id',
+        'table_category_id',
         'name',
         'capacity',
         'status',
@@ -28,6 +30,11 @@ class DiningTable extends Model
         return [
             'status' => TableStatus::class,
         ];
+    }
+
+    public function tableCategory(): BelongsTo
+    {
+        return $this->belongsTo(TableCategory::class);
     }
 
     public function orders(): HasMany

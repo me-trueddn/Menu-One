@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\UserLoginToken;
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -52,6 +53,42 @@ class AuthenticationTest extends TestCase
 
         $this->assertGuest();
         $response->assertRedirect(route('login', absolute: false));
+    }
+
+    public function test_logout_terminates_login_token_and_all_database_sessions(): void
+    {
+        config(['session.driver' => 'database']);
+        $this->app->forgetInstance('session');
+        $this->app->forgetInstance('session.store');
+
+        $user = User::factory()->create();
+
+        $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ])->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertDatabaseHas('user_login_tokens', ['user_id' => $user->id]);
+
+        DB::table('sessions')->insert([
+            'id' => 'other-device-session',
+            'user_id' => $user->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'Other Browser',
+            'payload' => base64_encode(serialize([])),
+            'last_activity' => now()->timestamp,
+        ]);
+
+        $this->assertSame(2, DB::table('sessions')->where('user_id', $user->id)->count());
+
+        $this->assertSame(2, DB::table('sessions')->where('user_id', $user->id)->count());
+
+        $this->post('/logout')->assertRedirect(route('login', absolute: false));
+        $this->app->terminate();
+
+        $this->assertGuest();
+        $this->assertDatabaseMissing('user_login_tokens', ['user_id' => $user->id]);
+        $this->assertSame(0, DB::table('sessions')->where('user_id', $user->id)->count());
     }
 
     public function test_idle_session_redirects_to_login(): void

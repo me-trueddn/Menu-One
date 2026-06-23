@@ -1,17 +1,49 @@
 @extends('theme::layouts.app')
 
-@section('title', 'Masa Düzenle')
-@section('page-title', 'Masa Düzenle')
+@section('title', __('menu.edit_table'))
+@section('page-title', __('menu.edit_table'))
 
 @section('content')
-<div class="card"><div class="card-body">
-<form method="POST" action="{{ route('admin.tables.update', $table) }}">@csrf @method('PUT')
-    <div class="mb-3"><label class="form-label">Masa Adı</label><input name="name" class="form-control" value="{{ old('name', $table->name) }}" required></div>
-    <div class="mb-3"><label class="form-label">Kapasite</label><input type="number" name="capacity" class="form-control" value="{{ old('capacity', $table->capacity) }}" min="1" required></div>
-    <div class="mb-3"><label class="form-label">Durum</label>
-        <select name="status" class="form-select">@foreach($statuses as $s)<option value="{{ $s->value }}" @selected(old('status', $table->status->value)===$s->value)>{{ $s->label() }}</option>@endforeach</select>
+<div class="card">
+    <div class="card-body">
+        <form method="POST" action="{{ route('admin.tables.update', $table) }}">
+            @csrf @method('PUT')
+            @if($tableCategories->isNotEmpty())
+                <div class="mb-3">
+                    <label class="form-label" for="tableCategory">{{ __('menu.table_category') }}</label>
+                    <select id="tableCategory" name="table_category_id" class="form-select">
+                        <option value="">{{ __('menu.no_table_category') }}</option>
+                        @foreach($tableCategories as $category)
+                            <option value="{{ $category->id }}" @selected((string) old('table_category_id', $table->table_category_id) === (string) $category->id)>
+                                {{ $category->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('table_category_id')<div class="text-danger small">{{ $message }}</div>@enderror
+                </div>
+            @endif
+            <div class="mb-3">
+                <label class="form-label" for="tableName">{{ __('menu.table_name') }}</label>
+                <input id="tableName" name="name" class="form-control" value="{{ old('name', $table->name) }}" required>
+                @error('name')<div class="text-danger small">{{ $message }}</div>@enderror
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="tableCapacity">{{ __('menu.table_capacity_label') }}</label>
+                <input id="tableCapacity" type="number" name="capacity" class="form-control" value="{{ old('capacity', $table->capacity) }}" min="1" required>
+                @error('capacity')<div class="text-danger small">{{ $message }}</div>@enderror
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="tableStatus">{{ __('menu.table_status') }}</label>
+                <select id="tableStatus" name="status" class="form-select">
+                    @foreach($statuses as $status)
+                        <option value="{{ $status->value }}" @selected(old('status', $table->status->value) === $status->value)>{{ $status->label() }}</option>
+                    @endforeach
+                </select>
+                @error('status')<div class="text-danger small">{{ $message }}</div>@enderror
+            </div>
+            <button class="btn btn-primary">{{ __('menu.save') }}</button>
+            <a href="{{ route('admin.tables.index') }}" class="btn btn-secondary">{{ __('menu.cancel') }}</a>
+        </form>
     </div>
-    <button class="btn btn-primary">Güncelle</button>
-    <a href="{{ route('admin.tables.index') }}" class="btn btn-secondary">İptal</a>
-</form></div></div>
+</div>
 @endsection

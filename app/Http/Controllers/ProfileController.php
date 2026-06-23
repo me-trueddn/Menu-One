@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\Tenant;
+use App\Services\UserLoginTokenService;
 use App\Services\PasswordLifecycleService;
 use App\Services\TenantLicenseService;
 use App\Services\TwoFactorNotificationService;
@@ -211,7 +212,7 @@ class ProfileController extends Controller
             $user->assignedTenants()->detach();
         }
 
-        $user->loginToken()?->delete();
+        app(UserLoginTokenService::class)->revoke($user);
         $user->syncRoles([]);
         $user->delete();
 

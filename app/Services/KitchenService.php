@@ -47,6 +47,21 @@ class KitchenService
         return $this->groupItemsByTable($this->readyItems());
     }
 
+    /** @return array<int, int> */
+    public function readyCountsByTableId(): array
+    {
+        return OrderItem::query()
+            ->where('status', OrderItemStatus::Ready)
+            ->whereHas('order', fn ($q) => $q
+                ->whereIn('status', OrderStatus::payableValues())
+                ->whereDate('created_at', today()))
+            ->with('order:id,cafe_table_id')
+            ->get()
+            ->groupBy(fn (OrderItem $item) => $item->order->cafe_table_id)
+            ->map(fn (Collection $items) => $items->count())
+            ->all();
+    }
+
     public function updateItemStatus(OrderItem $item, OrderItemStatus $status): OrderItem
     {
         $item->update(['status' => $status]);

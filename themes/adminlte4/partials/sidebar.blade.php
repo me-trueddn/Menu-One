@@ -43,7 +43,7 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ route('admin.tables.index') }}" class="nav-link {{ request()->routeIs('admin.tables.*') ? 'active' : '' }}">
+                        <a href="{{ route('admin.tables.index') }}" class="nav-link {{ request()->routeIs('admin.tables.*', 'admin.table-categories.*') ? 'active' : '' }}">
                             <i class="nav-icon bi bi-grid-3x3"></i>
                             <p>{{ __('menu.tables') }}</p>
                         </a>
