@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\EmailVerificationToken;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\CafeStaffService;
 use App\Services\MailConfigService;
+use App\Services\SocialAuthService;
 use App\Services\PasswordLifecycleService;
 use App\Services\TwoFactorNotificationService;
+use App\Services\TwoFactorService;
 use App\Support\MailExceptionFormatter;
 use App\Support\SecurityPolicy;
 use Illuminate\Http\RedirectResponse;
@@ -21,11 +24,20 @@ class CustomerController extends Controller
 {
     public function __construct(
         private PasswordLifecycleService $passwordLifecycle,
+        private TwoFactorService $twoFactor,
         private TwoFactorNotificationService $twoFactorNotifications,
     ) {}
 
     public function index(Request $request): View
     {
+        CafeStaffService::healOrphanCustomerAccounts();
+
+        User::query()
+            ->customers()
+            ->whereIn('oauth_provider', ['google', 'microsoft'])
+            ->whereNull('email_verified_at')
+            ->each(fn (User $customer) => SocialAuthService::ensureOAuthEmailVerified($customer));
+
         $perPage = in_array((int) $request->query('per_page'), [20, 50, 100, 200], true)
             ? (int) $request->query('per_page')
             : 20;
@@ -125,16 +137,38 @@ class CustomerController extends Controller
             return back()->with('error', __('menu.two_factor_disabled_globally'));
         }
 
-        $enabled = ! $customer->two_factor_enabled;
-        $customer->update(['two_factor_enabled' => $enabled]);
+        if (! $customer->hasTwoFactorConfigured()) {
+            return back()->with('info', __('menu.two_factor_admin_enable_hint'));
+        }
+
+        $this->twoFactor->adminDisable($customer);
 
         try {
-            $this->twoFactorNotifications->notifyStatusChange($customer->fresh(), $enabled);
+            $this->twoFactorNotifications->notifyStatusChange($customer->fresh(), false);
         } catch (\Throwable $e) {
             report($e);
         }
 
-        return back()->with('success', __('menu.messages.updated'));
+        return back()->with('success', __('menu.two_factor_admin_disabled'));
+    }
+
+    public function resetTwoFactor(User $customer): RedirectResponse
+    {
+        abort_unless($customer->isCustomer(), 404);
+
+        if (! SecurityPolicy::bool('security_2fa_enabled_globally')) {
+            return back()->with('error', __('menu.two_factor_disabled_globally'));
+        }
+
+        $this->twoFactor->adminReset($customer);
+
+        try {
+            $this->twoFactorNotifications->notifyStatusChange($customer->fresh(), false);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return back()->with('success', __('menu.two_factor_reset_success'));
     }
 
     public function toggleEmailVerification(User $customer): RedirectResponse

@@ -36,12 +36,15 @@ class User extends Authenticatable
         'is_active',
         'is_super_admin',
         'two_factor_enabled',
+        'two_factor_secret',
+        'two_factor_confirmed_at',
         'unlicensed_cafe_deleted_at',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
     ];
 
     protected function casts(): array
@@ -53,6 +56,8 @@ class User extends Authenticatable
             'is_active' => 'boolean',
             'is_super_admin' => 'boolean',
             'two_factor_enabled' => 'boolean',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_confirmed_at' => 'datetime',
             'unlicensed_cafe_deleted_at' => 'datetime',
         ];
     }
@@ -72,6 +77,36 @@ class User extends Authenticatable
     public function accountSubscriptionBadgeClass(): string
     {
         return $this->hasPremiumLicensedCafe() ? 'text-bg-warning' : 'text-bg-info';
+    }
+
+    public function registrationMethodLabel(): string
+    {
+        return match ($this->oauth_provider) {
+            'google' => __('menu.registration_method_google'),
+            'microsoft' => __('menu.registration_method_microsoft'),
+            default => __('menu.registration_method_menu_one'),
+        };
+    }
+
+    public function registrationMethodBadgeClass(): string
+    {
+        return match ($this->oauth_provider) {
+            'google' => 'text-bg-danger',
+            'microsoft' => 'text-bg-primary',
+            default => 'text-bg-secondary',
+        };
+    }
+
+    public function registeredViaOAuth(): bool
+    {
+        return in_array($this->oauth_provider, ['google', 'microsoft'], true);
+    }
+
+    public function hasTwoFactorConfigured(): bool
+    {
+        return $this->two_factor_enabled
+            && $this->two_factor_secret !== null
+            && $this->two_factor_confirmed_at !== null;
     }
 
     protected static function booted(): void
@@ -176,16 +211,35 @@ class User extends Authenticatable
             $tenant->update(['owner_user_id' => null]);
         }
 
+        $this->syncCafeAdminRole();
+    }
+
+    public function syncCafeAdminRole(): void
+    {
         $this->refresh();
 
-        if (
-            $this->tenant_id === null
-            && ! $this->assignedTenants()->exists()
-            && ! $this->ownedTenants()->exists()
-            && $this->hasRole('cafe_admin')
-        ) {
-            $this->removeRole('cafe_admin');
+        $hasCafeLinks = $this->tenant_id !== null
+            || $this->assignedTenants()->exists()
+            || $this->ownedTenants()->exists();
+
+        if ($hasCafeLinks || ! $this->hasRole('cafe_admin')) {
+            return;
         }
+
+        $this->removeRole('cafe_admin');
+    }
+
+    public function showsCafeSidebar(): bool
+    {
+        if (\App\Support\TenantAccess::isInSupportMode($this)) {
+            return true;
+        }
+
+        if (! $this->hasRole('cafe_admin')) {
+            return false;
+        }
+
+        return $this->linkedTenants()->isNotEmpty();
     }
 
     public function managesCafePanel(): bool
@@ -290,7 +344,7 @@ class User extends Authenticatable
             return PlatformModules::firstAccessibleRoute($this) ?? 'profile.edit';
         }
 
-        if ($this->hasRole('cafe_admin')) {
+        if ($this->hasRole('cafe_admin') && $this->linkedTenants()->isNotEmpty()) {
             return 'admin.dashboard';
         }
 

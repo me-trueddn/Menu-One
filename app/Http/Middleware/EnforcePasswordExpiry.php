@@ -19,7 +19,7 @@ class EnforcePasswordExpiry
             return $next($request);
         }
 
-        if ($request->routeIs('password.update', 'profile.edit', 'logout', 'password.confirm*')) {
+        if ($request->routeIs('password.update', 'profile.edit', 'profile.two-factor.*', 'logout', 'password.confirm*')) {
             return $next($request);
         }
 

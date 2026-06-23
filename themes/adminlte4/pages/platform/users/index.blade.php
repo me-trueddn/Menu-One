@@ -62,8 +62,14 @@
                                     <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#resetPwd{{ $user->id }}">{{ __('menu.reset_password') }}</button>
                                     <form action="{{ route('platform.users.toggle-2fa', $user) }}" method="POST" class="d-inline">
                                         @csrf
-                                        <button class="btn btn-outline-secondary" @disabled(!\App\Support\SecurityPolicy::bool('security_2fa_enabled_globally')) title="{{ \App\Support\SecurityPolicy::bool('security_2fa_enabled_globally') ? '' : __('menu.two_factor_disabled_globally') }}">
-                                            2FA {{ $user->two_factor_enabled ? 'ON' : 'OFF' }}
+                                        <button class="btn btn-outline-secondary" @disabled(!\App\Support\SecurityPolicy::bool('security_2fa_enabled_globally') || ! $user->hasTwoFactorConfigured()) title="{{ \App\Support\SecurityPolicy::bool('security_2fa_enabled_globally') ? '' : __('menu.two_factor_disabled_globally') }}">
+                                            {{ __('menu.disable_2fa') }}
+                                        </button>
+                                    </form>
+                                    <form action="{{ route('platform.users.reset-2fa', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('menu.two_factor_reset_confirm') }}')">
+                                        @csrf
+                                        <button class="btn btn-outline-warning" @disabled(!\App\Support\SecurityPolicy::bool('security_2fa_enabled_globally') || ! $user->hasTwoFactorConfigured())>
+                                            {{ __('menu.reset_2fa') }}
                                         </button>
                                     </form>
                                     <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#changeEmail{{ $user->id }}">{{ __('menu.change_email') }}</button>

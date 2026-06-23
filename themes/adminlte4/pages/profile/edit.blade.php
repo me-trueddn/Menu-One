@@ -4,6 +4,8 @@
 @section('page-title', __('menu.profile'))
 
 @section('content')
+@include('theme::partials.license-expired-banner')
+
 <div class="card shadow-sm mb-3">
     <div class="card-body">
         <div class="row align-items-center g-3">
@@ -50,6 +52,12 @@
                 <a class="nav-link {{ $tab === 'licensing' ? 'active' : '' }}"
                    href="{{ route('profile.edit', ['tab' => 'licensing']) }}">
                     <i class="bi bi-award me-1"></i>{{ __('menu.licensing_tab') }}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ $tab === 'ticket' ? 'active' : '' }}"
+                   href="{{ route('profile.edit', ['tab' => 'ticket']) }}">
+                    <i class="bi bi-ticket-perforated me-1"></i>{{ __('menu.ticket') }}
                 </a>
             </li>
         </ul>
@@ -142,7 +150,7 @@
                                 </li>
                             @endforeach
                         </ul>
-                        @if(!empty($canSwitchTenants) && $canSwitchTenants)
+                        @if(!empty($canSwitchTenants) && $canSwitchTenants && ! \App\Support\TenantLicenseGate::licenseExpiredForUser($user))
                             <a href="{{ route('admin.dashboard') }}" class="btn btn-sm btn-primary mt-3">{{ __('menu.go_to_cafe_panel') }}</a>
                         @endif
                     </div>
@@ -214,16 +222,75 @@
                 <div class="col-12">
                     <h6 class="fw-semibold">{{ __('menu.two_factor_auth') }}</h6>
                     <p class="text-muted small">{{ __('menu.two_factor_hint') }}</p>
-                    <form method="POST" action="{{ route('profile.toggle-2fa') }}">
-                        @csrf
-                        <button type="submit" class="btn btn-outline-secondary"
-                                @disabled(!\App\Support\SecurityPolicy::bool('security_2fa_enabled_globally'))>
-                            {{ $user->two_factor_enabled ? __('menu.disable_2fa') : __('menu.enable_2fa') }}
-                            <span class="badge ms-1 {{ $user->two_factor_enabled ? 'text-bg-success' : 'text-bg-secondary' }}">
-                                {{ $user->two_factor_enabled ? 'ON' : 'OFF' }}
-                            </span>
-                        </button>
-                    </form>
+
+                    @unless($twoFactorGloballyEnabled)
+                        <div class="alert alert-secondary mb-0">{{ __('menu.two_factor_disabled_globally') }}</div>
+                    @else
+                        @if($user->hasTwoFactorConfigured())
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <span class="badge text-bg-success">{{ __('menu.two_factor_status_on') }}</span>
+                                <span class="small text-muted">{{ __('menu.two_factor_enabled_since', ['date' => $user->two_factor_confirmed_at?->format('d.m.Y H:i')]) }}</span>
+                            </div>
+
+                            <form method="POST" action="{{ route('profile.two-factor.disable') }}" class="row g-3">
+                                @csrf
+                                <div class="col-md-4">
+                                    <label class="form-label" for="disable_code">{{ __('menu.two_factor_code') }}</label>
+                                    <input type="text" id="disable_code" name="code" inputmode="numeric" maxlength="6"
+                                           class="form-control @error('two_factor_code') is-invalid @enderror" required>
+                                    @error('two_factor_code')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
+                                @unless($user->registeredViaOAuth())
+                                    <div class="col-md-4">
+                                        <label class="form-label" for="disable_password">{{ __('menu.current_password') }}</label>
+                                        <input type="password" id="disable_password" name="password"
+                                               class="form-control @error('password') is-invalid @enderror" required>
+                                        @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                    </div>
+                                @endunless
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-outline-danger">{{ __('menu.disable_2fa') }}</button>
+                                </div>
+                            </form>
+                        @elseif($twoFactorSetup)
+                            <div class="alert alert-info">{{ __('menu.two_factor_scan_qr') }}</div>
+                            <div class="row g-4 align-items-start">
+                                <div class="col-md-auto text-center">
+                                    <div class="border rounded p-2 bg-white d-inline-block">
+                                        <img src="{{ $twoFactorSetup['qr_inline'] }}"
+                                             alt="{{ __('menu.two_factor_qr_alt') }}"
+                                             width="200" height="200"
+                                             class="d-block">
+                                    </div>
+                                </div>
+                                <div class="col-md">
+                                    <p class="small text-muted mb-2">{{ __('menu.two_factor_manual_key') }}</p>
+                                    <code class="user-select-all d-block mb-3">{{ $twoFactorSetup['secret'] }}</code>
+
+                                    <form method="POST" action="{{ route('profile.two-factor.confirm') }}" class="row g-3">
+                                        @csrf
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="confirm_code">{{ __('menu.two_factor_code') }}</label>
+                                            <input type="text" id="confirm_code" name="code" inputmode="numeric" maxlength="6"
+                                                   class="form-control @error('two_factor_code') is-invalid @enderror" required autofocus>
+                                            @error('two_factor_code')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                        </div>
+                                        <div class="col-12">
+                                            <button type="submit" class="btn btn-primary">{{ __('menu.two_factor_confirm_setup') }}</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        @else
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <span class="badge text-bg-secondary">{{ __('menu.two_factor_status_off') }}</span>
+                            </div>
+                            <form method="POST" action="{{ route('profile.two-factor.setup') }}">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-primary">{{ __('menu.enable_2fa') }}</button>
+                            </form>
+                        @endif
+                    @endunless
                 </div>
 
                 <div class="col-12"><hr></div>
@@ -281,7 +348,9 @@
                                     @include('theme::partials.cafe-license-info', ['cafe' => $ownedCafe])
                                 </div>
                                 <div class="d-flex gap-2 flex-wrap">
-                                    <a href="{{ route('admin.dashboard') }}" class="btn btn-sm btn-outline-primary">{{ __('menu.go_to_cafe_panel') }}</a>
+                                    @if($ownedCafe->hasValidLicense())
+                                        <a href="{{ route('admin.dashboard') }}" class="btn btn-sm btn-outline-primary">{{ __('menu.go_to_cafe_panel') }}</a>
+                                    @endif
                                     @if(! $ownedCafe->isPremiumLicensed())
                                         <form method="POST" action="{{ route('profile.cafe.destroy', $ownedCafe) }}"
                                               onsubmit="return confirm('{{ __('menu.confirm_delete_cafe') }}')">
@@ -359,10 +428,21 @@
         @endif
 
         @if($tab === 'licensing')
-            <div class="text-center py-5">
+            <div class="text-center py-4">
                 <i class="bi bi-award display-4 text-muted"></i>
                 <h5 class="mt-3">{{ __('menu.licensing_tab') }}</h5>
-                <p class="text-muted mb-0">{{ __('menu.licensing_coming_soon') }}</p>
+                <p class="text-muted">{{ __('menu.licensing_coming_soon') }}</p>
+                <a href="{{ route('profile.edit', ['tab' => 'ticket']) }}" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-ticket-perforated me-1"></i>{{ __('menu.ticket') }}
+                </a>
+            </div>
+        @endif
+
+        @if($tab === 'ticket')
+            <div class="text-center py-4">
+                <i class="bi bi-ticket-perforated display-4 text-muted"></i>
+                <h5 class="mt-3">{{ __('menu.ticket') }}</h5>
+                <p class="text-muted mb-0">{{ __('menu.ticket_coming_soon') }}</p>
             </div>
         @endif
     </div>

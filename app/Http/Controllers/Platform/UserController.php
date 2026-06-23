@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\MailConfigService;
 use App\Services\PasswordLifecycleService;
 use App\Services\TwoFactorNotificationService;
+use App\Services\TwoFactorService;
 use App\Support\MailExceptionFormatter;
 use App\Support\SecurityPolicy;
 use App\Support\SuperAdminGuard;
@@ -22,6 +23,7 @@ class UserController extends Controller
 {
     public function __construct(
         private PasswordLifecycleService $passwordLifecycle,
+        private TwoFactorService $twoFactor,
         private TwoFactorNotificationService $twoFactorNotifications,
     ) {}
     public function index(): View
@@ -169,16 +171,41 @@ class UserController extends Controller
             return back()->with('error', __('menu.two_factor_disabled_globally'));
         }
 
-        $enabled = ! $user->two_factor_enabled;
-        $user->update(['two_factor_enabled' => $enabled]);
+        $enabled = ! $user->hasTwoFactorConfigured();
+
+        if ($enabled) {
+            return back()->with('info', __('menu.two_factor_admin_enable_hint'));
+        }
+
+        $this->twoFactor->adminDisable($user);
 
         try {
-            $this->twoFactorNotifications->notifyStatusChange($user->fresh(), $enabled);
+            $this->twoFactorNotifications->notifyStatusChange($user->fresh(), false);
         } catch (\Throwable $e) {
             report($e);
         }
 
-        return back()->with('success', __('menu.messages.updated'));
+        return back()->with('success', __('menu.two_factor_admin_disabled'));
+    }
+
+    public function resetTwoFactor(User $user): RedirectResponse
+    {
+        abort_unless($user->isPlatformStaffMember(), 404);
+        SuperAdminGuard::abortIfProtected($user);
+
+        if (! SecurityPolicy::bool('security_2fa_enabled_globally')) {
+            return back()->with('error', __('menu.two_factor_disabled_globally'));
+        }
+
+        $this->twoFactor->adminReset($user);
+
+        try {
+            $this->twoFactorNotifications->notifyStatusChange($user->fresh(), false);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return back()->with('success', __('menu.two_factor_reset_success'));
     }
 
     public function changeEmail(Request $request, User $user): RedirectResponse
@@ -256,6 +283,9 @@ class UserController extends Controller
         SuperAdminGuard::abortIfProtected($user);
 
         $user->assignedTenants()->detach($tenant->id);
+
+        $user->refresh();
+        $user->syncCafeAdminRole();
 
         return back()->with('success', __('menu.tenant_removed'));
     }

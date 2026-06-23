@@ -33,6 +33,12 @@ return [
             'route' => 'platform.settings.mail',
             'route_patterns' => ['platform.settings.mail*'],
         ],
+        'seo' => [
+            'label' => 'menu.seo_settings',
+            'icon' => 'bi-search',
+            'route' => 'platform.settings.seo',
+            'route_patterns' => ['platform.settings.seo*'],
+        ],
         'cafes' => [
             'label' => 'menu.cafes',
             'icon' => 'bi-shop',

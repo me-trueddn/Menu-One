@@ -8,12 +8,14 @@ use App\Services\UserLoginTokenService;
 use App\Services\PasswordLifecycleService;
 use App\Services\TenantLicenseService;
 use App\Services\TwoFactorNotificationService;
+use App\Services\TwoFactorService;
 use App\Services\UserCafeService;
 use App\Support\CompanyDefaults;
 use App\Support\ImageStorage;
 use App\Support\SecurityPolicy;
 use App\Support\TenantAccess;
 use App\Support\TenantIdGenerator;
+use App\Support\TenantLicenseGate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,6 +29,7 @@ class ProfileController extends Controller
         private PasswordLifecycleService $passwordLifecycle,
         private TenantLicenseService $licenses,
         private UserCafeService $cafes,
+        private TwoFactorService $twoFactor,
         private TwoFactorNotificationService $twoFactorNotifications,
     ) {}
 
@@ -38,7 +41,7 @@ class ProfileController extends Controller
             'tenant.currentLicense.licenseType',
         ]);
 
-        $tab = in_array($request->query('tab'), ['profile', 'security', 'cafe', 'licensing'], true)
+        $tab = in_array($request->query('tab'), ['profile', 'security', 'cafe', 'licensing', 'ticket'], true)
             ? $request->query('tab')
             : 'profile';
 
@@ -50,6 +53,19 @@ class ProfileController extends Controller
         $cafeCooldownEndsAt = $this->cafes->cooldownEndsAt($user);
         $daysUntilCanCreateCafe = $this->cafes->daysUntilCanCreateCafe($user);
 
+        $twoFactorPending = $this->twoFactor->hasPendingSetup($user);
+        $twoFactorSetup = null;
+
+        if ($twoFactorPending) {
+            $secret = $this->twoFactor->pendingSecretFor($user);
+            if ($secret) {
+                $twoFactorSetup = [
+                    'secret' => $secret,
+                    'qr_inline' => $this->twoFactor->qrCodeInline($user, $secret),
+                ];
+            }
+        }
+
         return view('theme::pages.profile.edit', [
             'user' => $user,
             'tab' => $tab,
@@ -59,6 +75,8 @@ class ProfileController extends Controller
             'daysUntilCanCreateCafe' => $daysUntilCanCreateCafe,
             'ownedCafes' => $user->ownedTenants,
             'companyDefaults' => CompanyDefaults::all(),
+            'twoFactorGloballyEnabled' => SecurityPolicy::bool('security_2fa_enabled_globally'),
+            'twoFactorSetup' => $twoFactorSetup,
         ]);
     }
 
@@ -103,7 +121,7 @@ class ProfileController extends Controller
             ->with('success', __('menu.email_updated'));
     }
 
-    public function toggleTwoFactor(Request $request): RedirectResponse
+    public function startTwoFactorSetup(Request $request): RedirectResponse
     {
         if (! SecurityPolicy::bool('security_2fa_enabled_globally')) {
             return Redirect::route('profile.edit', ['tab' => 'security'])
@@ -111,17 +129,78 @@ class ProfileController extends Controller
         }
 
         $user = $request->user();
-        $enabled = ! $user->two_factor_enabled;
-        $user->update(['two_factor_enabled' => $enabled]);
+
+        if ($user->hasTwoFactorConfigured()) {
+            return Redirect::route('profile.edit', ['tab' => 'security'])
+                ->with('error', __('menu.two_factor_already_enabled'));
+        }
+
+        $this->twoFactor->beginSetup($user);
+
+        return Redirect::route('profile.edit', ['tab' => 'security'])
+            ->with('success', __('menu.two_factor_scan_qr'));
+    }
+
+    public function confirmTwoFactor(Request $request): RedirectResponse
+    {
+        if (! SecurityPolicy::bool('security_2fa_enabled_globally')) {
+            return Redirect::route('profile.edit', ['tab' => 'security'])
+                ->with('error', __('menu.two_factor_disabled_globally'));
+        }
+
+        $validated = $request->validate([
+            'code' => ['required', 'string'],
+        ]);
+
+        $user = $request->user();
+
+        if (! $this->twoFactor->confirmSetup($user, $validated['code'])) {
+            return Redirect::route('profile.edit', ['tab' => 'security'])
+                ->withErrors(['two_factor_code' => __('menu.two_factor_code_invalid')]);
+        }
 
         try {
-            $this->twoFactorNotifications->notifyStatusChange($user->fresh(), $enabled);
+            $this->twoFactorNotifications->notifyStatusChange($user->fresh(), true);
         } catch (\Throwable $e) {
             report($e);
         }
 
         return Redirect::route('profile.edit', ['tab' => 'security'])
-            ->with('success', __('menu.messages.updated'));
+            ->with('success', __('menu.two_factor_enabled_success'));
+    }
+
+    public function disableTwoFactor(Request $request): RedirectResponse
+    {
+        if (! SecurityPolicy::bool('security_2fa_enabled_globally')) {
+            return Redirect::route('profile.edit', ['tab' => 'security'])
+                ->with('error', __('menu.two_factor_disabled_globally'));
+        }
+
+        $user = $request->user();
+
+        $rules = [
+            'code' => ['required', 'string'],
+        ];
+
+        if (! $user->registeredViaOAuth()) {
+            $rules['password'] = ['required', 'current_password'];
+        }
+
+        $validated = $request->validate($rules);
+
+        if (! $this->twoFactor->disable($user, $validated['code'])) {
+            return Redirect::route('profile.edit', ['tab' => 'security'])
+                ->withErrors(['two_factor_code' => __('menu.two_factor_code_invalid')]);
+        }
+
+        try {
+            $this->twoFactorNotifications->notifyStatusChange($user->fresh(), false);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return Redirect::route('profile.edit', ['tab' => 'security'])
+            ->with('success', __('menu.two_factor_disabled_success'));
     }
 
     public function storeCafe(Request $request): RedirectResponse
@@ -184,9 +263,9 @@ class ProfileController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
-        if (session('active_tenant_id') === $tenant->id) {
-            session()->forget('active_tenant_id');
-        }
+        TenantLicenseGate::clearCafeConnection();
+
+        Auth::setUser($user->fresh());
 
         return redirect()
             ->route('profile.edit', ['tab' => 'cafe'])

@@ -38,6 +38,8 @@ class SocialAuthService
             ->first();
 
         if ($user) {
+            static::ensureOAuthEmailVerified($user);
+
             return $user;
         }
 
@@ -55,6 +57,9 @@ class SocialAuthService
                     'oauth_provider_id' => $providerId,
                 ]);
 
+                CafeStaffService::ensureCustomerRole($existing);
+                static::ensureOAuthEmailVerified($existing);
+
                 return $existing;
             }
         }
@@ -67,6 +72,7 @@ class SocialAuthService
             'password' => Hash::make(Str::password(32)),
             'password_changed_at' => now(),
             'is_active' => true,
+            'email_verified_at' => now(),
             'oauth_provider' => $provider,
             'oauth_provider_id' => $providerId,
         ]);
@@ -74,5 +80,18 @@ class SocialAuthService
         $user->assignRole(Role::firstOrCreate(['name' => 'user', 'guard_name' => 'web']));
 
         return $user;
+    }
+
+    public static function ensureOAuthEmailVerified(User $user): void
+    {
+        if (! $user->registeredViaOAuth()) {
+            return;
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return;
+        }
+
+        $user->forceFill(['email_verified_at' => now()])->save();
     }
 }

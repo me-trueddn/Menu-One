@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Services\SupportSessionService;
 use App\Services\UserLoginTokenService;
 use App\Support\TenantAccess;
+use App\Support\TenantLicenseGate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,11 +26,28 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
+        $user = $request->user();
+
+        if ($user->hasTwoFactorConfigured()) {
+            $request->session()->put([
+                'login.id' => $user->getKey(),
+                'login.remember' => $request->boolean('remember'),
+            ]);
+
+            Auth::logout();
+            $request->session()->regenerate();
+
+            return redirect()->route('two-factor.login');
+        }
+
         $request->session()->regenerate();
 
-        $user = $request->user();
         $token = $this->loginTokens->issue($user, $request);
         $request->session()->put('user_access_token', $token);
+
+        if (TenantLicenseGate::licenseExpiredForUser($user)) {
+            return TenantLicenseGate::redirectToProfileForExpiredLicense();
+        }
 
         return redirect()->intended(route('dashboard', absolute: false));
     }

@@ -101,7 +101,7 @@ class SecurityPolicy
             'security_reset_link_minutes' => '60',
             'security_inactive_account_days' => '0',
             'security_2fa_required' => '0',
-            'security_2fa_enabled_globally' => '0',
+            'security_2fa_enabled_globally' => '1',
         ];
     }
 }

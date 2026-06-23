@@ -6,6 +6,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Models\Role;
 
 class CafeStaffService
 {
@@ -17,9 +18,15 @@ class CafeStaffService
 
     public function findByEmail(string $email): ?User
     {
-        return User::query()
+        $user = User::query()
             ->where('email', Str::lower(trim($email)))
             ->first();
+
+        if ($user) {
+            static::ensureCustomerRole($user);
+        }
+
+        return $user;
     }
 
     public function attach(Tenant $tenant, User $user, string $role): User
@@ -41,6 +48,38 @@ class CafeStaffService
 
         $user->syncRoles([]);
         $user->update(['tenant_id' => null]);
+
+        static::ensureCustomerRole($user);
+    }
+
+    public static function ensureCustomerRole(User $user): void
+    {
+        if ($user->isSuperAdmin() || $user->isPlatformStaffMember()) {
+            return;
+        }
+
+        if ($user->tenant_id !== null) {
+            return;
+        }
+
+        if ($user->hasAnyRole(self::assignableRoles())) {
+            return;
+        }
+
+        if ($user->hasRole('user')) {
+            return;
+        }
+
+        $user->assignRole(Role::firstOrCreate(['name' => 'user', 'guard_name' => 'web']));
+    }
+
+    public static function healOrphanCustomerAccounts(): void
+    {
+        User::query()
+            ->whereNull('tenant_id')
+            ->where('is_super_admin', false)
+            ->whereDoesntHave('roles')
+            ->each(fn (User $user) => static::ensureCustomerRole($user));
     }
 
     public function assertCanAttach(Tenant $tenant, User $user): void

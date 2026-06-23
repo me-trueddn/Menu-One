@@ -109,6 +109,11 @@ class Tenant extends BaseTenant
         return app(TenantLicenseService::class)->isPremiumLicensed($this);
     }
 
+    public function hasValidLicense(): bool
+    {
+        return app(TenantLicenseService::class)->isLicenseValid($this);
+    }
+
     public function subscriptionLabel(): string
     {
         return app(TenantLicenseService::class)->subscriptionLabelFor($this);

@@ -9,6 +9,7 @@
     @endauth
     <title>@yield('title', config('app.name'))</title>
     <link rel="icon" href="{{ \App\Support\Branding::faviconUrl() }}">
+    @include('theme::partials.seo-head', ['isPublicPage' => false])
     @vite(['resources/css/themes/adminlte4.css', 'resources/js/themes/adminlte4.js'])
     @stack('styles')
     @auth
@@ -16,6 +17,7 @@
     @endauth
 </head>
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+@include('theme::partials.seo-body', ['isPublicPage' => false])
 @php($currentUser = auth()->user())
 @include('theme::partials.impersonation-banner')
 @include('theme::partials.support-banner')

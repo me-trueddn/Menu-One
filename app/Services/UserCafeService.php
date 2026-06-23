@@ -62,15 +62,19 @@ class UserCafeService
 
             $user->assignedTenants()->detach($tenant->id);
             $tenant->members()->detach();
-            $tenant->delete();
 
-            if (! $user->ownedTenants()->exists()) {
-                if ($user->hasRole('cafe_admin') && ! $user->assignedTenants()->exists() && $user->tenant_id === null) {
-                    $user->removeRole('cafe_admin');
-                }
-
-                $user->update(['unlicensed_cafe_deleted_at' => now()]);
+            if ($tenant->owner_user_id === $user->id) {
+                $tenant->update(['owner_user_id' => null]);
             }
+
+            $tenant->delete();
         });
+
+        $user->refresh();
+        $user->syncCafeAdminRole();
+
+        if ($user->linkedTenants()->isEmpty()) {
+            $user->update(['unlicensed_cafe_deleted_at' => now()]);
+        }
     }
 }

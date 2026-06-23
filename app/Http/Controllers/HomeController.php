@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Support\TenantAccess;
+use App\Support\TenantLicenseGate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -26,6 +27,10 @@ class HomeController extends Controller
             if ($activeId) {
                 TenantAccess::setActiveTenant($user, $activeId);
             }
+        }
+
+        if (TenantLicenseGate::licenseExpiredForUser($user)) {
+            return TenantLicenseGate::redirectToProfileForExpiredLicense();
         }
 
         return redirect()->route($user->defaultRoute());

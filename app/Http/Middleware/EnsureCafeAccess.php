@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\TenantLicenseGate;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -19,6 +20,10 @@ class EnsureCafeAccess
         $tenant = tenant();
 
         if (! $tenant) {
+            if (TenantLicenseGate::licenseExpiredForUser($user)) {
+                return TenantLicenseGate::denyExpiredLicense($request);
+            }
+
             abort(403, __('menu.no_cafe_access'));
         }
 
@@ -41,7 +46,7 @@ class EnsureCafeAccess
             }
 
             if (! app(\App\Services\TenantLicenseService::class)->isLicenseValid($tenantModel)) {
-                abort(403, __('menu.cafe_license_expired'));
+                return TenantLicenseGate::denyExpiredLicense($request);
             }
         }
 

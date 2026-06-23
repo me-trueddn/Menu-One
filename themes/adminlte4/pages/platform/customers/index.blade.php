@@ -45,6 +45,7 @@
                     <th>{{ __('menu.full_name') }}</th>
                     <th>{{ __('menu.email') }}</th>
                     <th>{{ __('menu.phone') }}</th>
+                    <th>{{ __('menu.registration_method') }}</th>
                     <th>{{ __('menu.account_type') }}</th>
                     <th>{{ __('menu.tenant') }}</th>
                     <th>{{ __('menu.status') }}</th>
@@ -60,6 +61,11 @@
                         <td>{{ $customer->name }}</td>
                         <td>{{ $customer->email }}</td>
                         <td>{{ $customer->phone ?? '—' }}</td>
+                        <td>
+                            <span class="badge {{ $customer->registrationMethodBadgeClass() }}">
+                                {{ $customer->registrationMethodLabel() }}
+                            </span>
+                        </td>
                         <td>
                             <span class="badge {{ $customer->accountSubscriptionBadgeClass() }}">
                                 {{ $customer->accountSubscriptionLabel() }}
@@ -91,9 +97,13 @@
                             </span>
                         </td>
                         <td>
-                            <span class="badge {{ $customer->hasVerifiedEmail() ? 'text-bg-success' : 'text-bg-warning' }}">
-                                {{ $customer->hasVerifiedEmail() ? __('menu.verified') : __('menu.unverified') }}
-                            </span>
+                            @if($customer->registeredViaOAuth())
+                                <span class="badge text-bg-success">{{ __('menu.verified') }}</span>
+                            @else
+                                <span class="badge {{ $customer->hasVerifiedEmail() ? 'text-bg-success' : 'text-bg-warning' }}">
+                                    {{ $customer->hasVerifiedEmail() ? __('menu.verified') : __('menu.unverified') }}
+                                </span>
+                            @endif
                         </td>
                         <td>{{ $customer->created_at?->format('d.m.Y H:i') }}</td>
                         <td class="text-end">
@@ -107,8 +117,14 @@
                                 </form>
                                 <form action="{{ route('platform.customers.toggle-2fa', $customer) }}" method="POST" class="d-inline">
                                     @csrf
-                                    <button class="btn btn-outline-secondary" @disabled(!\App\Support\SecurityPolicy::bool('security_2fa_enabled_globally'))>
-                                        2FA {{ $customer->two_factor_enabled ? 'ON' : 'OFF' }}
+                                    <button class="btn btn-outline-secondary" @disabled(!\App\Support\SecurityPolicy::bool('security_2fa_enabled_globally') || ! $customer->hasTwoFactorConfigured())>
+                                        {{ __('menu.disable_2fa') }}
+                                    </button>
+                                </form>
+                                <form action="{{ route('platform.customers.reset-2fa', $customer) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('menu.two_factor_reset_confirm') }}')">
+                                    @csrf
+                                    <button class="btn btn-outline-warning" @disabled(!\App\Support\SecurityPolicy::bool('security_2fa_enabled_globally') || ! $customer->hasTwoFactorConfigured())>
+                                        {{ __('menu.reset_2fa') }}
                                     </button>
                                 </form>
                                 <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#changeEmail{{ $customer->id }}">{{ __('menu.change_email') }}</button>
@@ -211,7 +227,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="10" class="text-center text-muted">{{ __('menu.no_data') }}</td></tr>
+                    <tr><td colspan="11" class="text-center text-muted">{{ __('menu.no_data') }}</td></tr>
                 @endforelse
             </tbody>
         </table>

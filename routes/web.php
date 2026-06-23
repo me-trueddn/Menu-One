@@ -17,6 +17,7 @@ use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Platform\CustomerController;
 use App\Http\Controllers\Platform\LicenseTypeController;
 use App\Http\Controllers\Platform\MailSettingsController;
+use App\Http\Controllers\Platform\SeoSettingsController;
 use App\Http\Controllers\Platform\SiteSettingsController;
 use App\Http\Controllers\Platform\TenantController;
 use App\Http\Controllers\Platform\TenantStaffController;
@@ -25,13 +26,18 @@ use App\Http\Controllers\Platform\UserGroupController;
 use App\Http\Controllers\Platform\UserSecuritySettingsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReservationController;
+use App\Http\Controllers\SeoController;
 use App\Http\Controllers\StaffInvitationController;
 use App\Http\Controllers\TenantSwitchController;
+use App\Http\Controllers\TicketController;
 use App\Http\Controllers\Waiter\OrderController as WaiterOrderController;
 use App\Http\Controllers\Waiter\TableController as WaiterTableController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/locale/{locale}', LocaleController::class)->name('locale.switch');
+
+Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
+Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
 
 Route::get('/', HomeController::class);
 
@@ -49,6 +55,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('users/security/enforce-2fa', [UserSecuritySettingsController::class, 'enforceTwoFactor'])->name('users.security.enforce-2fa');
         Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
         Route::post('users/{user}/toggle-2fa', [UserController::class, 'toggleTwoFactor'])->name('users.toggle-2fa');
+        Route::post('users/{user}/reset-2fa', [UserController::class, 'resetTwoFactor'])->name('users.reset-2fa');
         Route::post('users/{user}/change-email', [UserController::class, 'changeEmail'])->name('users.change-email');
         Route::post('users/{user}/send-reset-link', [UserController::class, 'sendResetLink'])->name('users.send-reset-link');
         Route::post('users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active');
@@ -59,6 +66,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('customers/{customer}/send-reset-link', [CustomerController::class, 'sendResetLink'])->name('customers.send-reset-link');
         Route::post('customers/{customer}/reset-password', [CustomerController::class, 'resetPassword'])->name('customers.reset-password');
         Route::post('customers/{customer}/toggle-2fa', [CustomerController::class, 'toggleTwoFactor'])->name('customers.toggle-2fa');
+        Route::post('customers/{customer}/reset-2fa', [CustomerController::class, 'resetTwoFactor'])->name('customers.reset-2fa');
         Route::post('customers/{customer}/toggle-email-verification', [CustomerController::class, 'toggleEmailVerification'])->name('customers.toggle-email-verification');
         Route::post('customers/{customer}/change-email', [CustomerController::class, 'changeEmail'])->name('customers.change-email');
         Route::post('customers/{customer}/tenants', [CustomerController::class, 'attachTenant'])->name('customers.tenants.attach');
@@ -71,6 +79,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('settings/mail', [MailSettingsController::class, 'edit'])->name('settings.mail');
         Route::put('settings/mail', [MailSettingsController::class, 'update'])->name('settings.mail.update');
         Route::post('settings/mail/test', [MailSettingsController::class, 'test'])->name('settings.mail.test');
+        Route::get('settings/seo', [SeoSettingsController::class, 'edit'])->name('settings.seo');
+        Route::put('settings/seo', [SeoSettingsController::class, 'update'])->name('settings.seo.update');
         Route::resource('tenants', TenantController::class)->except(['show']);
         Route::post('tenants/{tenant}/connect', [TenantController::class, 'connect'])->name('tenants.connect');
         Route::post('support/disconnect', [TenantController::class, 'disconnectSupport'])->name('support.disconnect');
@@ -98,7 +108,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/reports', [AdminReportController::class, 'index'])->name('reports.index');
     });
 
-    Route::middleware(['tenant', 'role:waiter,cashier,cafe_admin'])->prefix('reservations')->name('reservations.')->group(function () {
+    Route::middleware(['tenant', 'cafe', 'role:waiter,cashier,cafe_admin'])->prefix('reservations')->name('reservations.')->group(function () {
         Route::get('/', [ReservationController::class, 'index'])->name('index');
         Route::get('/create', [ReservationController::class, 'create'])->name('create');
         Route::post('/', [ReservationController::class, 'store'])->name('store');
@@ -108,13 +118,13 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/{reservation}', [ReservationController::class, 'destroy'])->name('destroy');
     });
 
-    Route::middleware(['tenant', 'role:cashier,cafe_admin'])->prefix('cashier')->name('cashier.')->group(function () {
+    Route::middleware(['tenant', 'cafe', 'role:cashier,cafe_admin'])->prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/tables', [CashierTableController::class, 'index'])->name('tables.index');
         Route::get('/tables/{table}', [CashierTableController::class, 'show'])->name('tables.show');
         Route::post('/orders/{order}/pay', [CashierPaymentController::class, 'store'])->name('orders.pay');
     });
 
-    Route::middleware(['tenant', 'role:waiter,cashier'])->prefix('waiter')->name('waiter.')->group(function () {
+    Route::middleware(['tenant', 'cafe', 'role:waiter,cashier'])->prefix('waiter')->name('waiter.')->group(function () {
         Route::get('/tables', [WaiterTableController::class, 'index'])->name('tables.index');
         Route::get('/tables/{table}', [WaiterTableController::class, 'show'])->name('tables.show');
         Route::post('/tables/{table}/orders', [WaiterOrderController::class, 'create'])->name('orders.create');
@@ -128,16 +138,19 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/ready-items/poll', [WaiterOrderController::class, 'pollReadyItems'])->name('ready-items.poll');
     });
 
-    Route::middleware(['tenant', 'role:kitchen'])->prefix('kitchen')->name('kitchen.')->group(function () {
+    Route::middleware(['tenant', 'cafe', 'role:kitchen'])->prefix('kitchen')->name('kitchen.')->group(function () {
         Route::get('/', [KitchenController::class, 'index'])->name('index');
         Route::get('/poll', [KitchenController::class, 'poll'])->name('poll');
         Route::patch('/items/{item}/status', [KitchenController::class, 'updateStatus'])->name('items.status');
     });
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::get('/ticket', [TicketController::class, 'index'])->name('ticket.index');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/email', [ProfileController::class, 'changeEmail'])->name('profile.change-email');
-    Route::post('/profile/toggle-2fa', [ProfileController::class, 'toggleTwoFactor'])->name('profile.toggle-2fa');
+    Route::post('/profile/toggle-2fa', [ProfileController::class, 'startTwoFactorSetup'])->name('profile.two-factor.setup');
+    Route::post('/profile/two-factor/confirm', [ProfileController::class, 'confirmTwoFactor'])->name('profile.two-factor.confirm');
+    Route::post('/profile/two-factor/disable', [ProfileController::class, 'disableTwoFactor'])->name('profile.two-factor.disable');
     Route::post('/profile/cafe', [ProfileController::class, 'storeCafe'])->name('profile.cafe.store');
     Route::delete('/profile/cafe/{tenant}', [ProfileController::class, 'destroyCafe'])->name('profile.cafe.destroy');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

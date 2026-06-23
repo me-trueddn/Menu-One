@@ -13,9 +13,11 @@ class EnforceTwoFactor
     protected array $except = [
         'profile.edit',
         'profile.update',
-        'profile.toggle-2fa',
+        'profile.two-factor.*',
+        'ticket.index',
         'logout',
         'login',
+        'two-factor.*',
         'register',
         'password.*',
         'verification.*',
@@ -30,11 +32,11 @@ class EnforceTwoFactor
             return $next($request);
         }
 
-        if (! SecurityPolicy::bool('security_2fa_required') && ! $user->two_factor_enabled) {
+        if ($user->hasTwoFactorConfigured()) {
             return $next($request);
         }
 
-        if ($user->two_factor_enabled) {
+        if (! SecurityPolicy::bool('security_2fa_required')) {
             return $next($request);
         }
 
@@ -45,7 +47,7 @@ class EnforceTwoFactor
         }
 
         return redirect()
-            ->route('profile.edit')
+            ->route('profile.edit', ['tab' => 'security'])
             ->with('error', __('menu.two_factor_required_message'));
     }
 }

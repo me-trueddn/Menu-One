@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Support\TenantAccess;
+use App\Support\TenantLicenseGate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -26,6 +27,10 @@ class TenantSwitchController extends Controller
         if ($tenants->count() === 1) {
             TenantAccess::setActiveTenant($user, (string) $tenants->first()->id);
 
+            if (TenantLicenseGate::licenseExpiredForUser($user)) {
+                return TenantLicenseGate::redirectToProfileForExpiredLicense();
+            }
+
             return redirect()->route($user->defaultRoute());
         }
 
@@ -44,6 +49,10 @@ class TenantSwitchController extends Controller
         ]);
 
         TenantAccess::setActiveTenant($user, $validated['tenant_id']);
+
+        if (TenantLicenseGate::licenseExpiredForUser($user)) {
+            return TenantLicenseGate::redirectToProfileForExpiredLicense();
+        }
 
         $redirect = $validated['redirect'] ?? null;
 

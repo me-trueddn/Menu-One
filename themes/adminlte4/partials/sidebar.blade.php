@@ -34,7 +34,7 @@
                     @endforeach
                 @endif
 
-                @if($currentUser->hasRole('cafe_admin') || $inSupportMode)
+                @if($currentUser->showsCafeSidebar())
                     <li class="nav-header">{{ __('menu.management') }}</li>
                     <li class="nav-item">
                         <a href="{{ route('admin.dashboard') }}" class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">

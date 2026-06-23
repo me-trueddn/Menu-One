@@ -4,10 +4,26 @@ namespace App\Support;
 
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\TenantLicenseService;
 
 class TenantAccess
 {
     public static function resolveActiveTenantId(User $user): ?string
+    {
+        $tenantId = self::resolveLinkedTenantId($user);
+
+        if ($tenantId === null) {
+            return null;
+        }
+
+        if (! self::canConnectToTenant($user, $tenantId)) {
+            return null;
+        }
+
+        return $tenantId;
+    }
+
+    public static function resolveLinkedTenantId(User $user): ?string
     {
         if ($user->isSuperAdmin()) {
             $sessionId = session('active_tenant_id');
@@ -52,6 +68,25 @@ class TenantAccess
         return null;
     }
 
+    public static function canConnectToTenant(User $user, string $tenantId): bool
+    {
+        if (TenantLicenseGate::shouldBypassLicenseCheck($user)) {
+            return true;
+        }
+
+        $tenant = Tenant::query()->with('currentLicense')->find($tenantId);
+
+        if ($tenant === null) {
+            return false;
+        }
+
+        if ($tenant->isStopped()) {
+            return false;
+        }
+
+        return app(TenantLicenseService::class)->isLicenseValid($tenant);
+    }
+
     public static function setActiveTenant(User $user, string $tenantId, bool $support = false): void
     {
         if ($support && ($user->isSuperAdmin() || $user->canAccessPlatformPanel())) {
@@ -61,6 +96,12 @@ class TenantAccess
         }
 
         abort_unless($user->canAccessTenant($tenantId), 403);
+
+        if (! self::canConnectToTenant($user, $tenantId)) {
+            session()->forget('active_tenant_id');
+
+            return;
+        }
 
         session(['active_tenant_id' => $tenantId]);
         session()->forget('support_tenant_mode');
