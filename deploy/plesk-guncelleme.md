@@ -93,3 +93,4 @@ Tüm satırlar **OK** olmalı. `MISMATCH` varsa:
 - `license_types` tablosunda aktif kayıt (deploy script `tenants:repair-data` seed eder)
 - Müşteri hesabında zaten cafe yok (`canCreateCafe`)
 - Oturum: `SESSION_DRIVER=database` → deploy sonrası yeniden giriş gerekebilir
+- Eski bug `users.tenant_id = 619` bıraktıysa: `php artisan tenants:repair-data` (619 → 619-718 düzeltir)

@@ -17,6 +17,7 @@ class TenantLicense extends Model
     protected function casts(): array
     {
         return [
+            'tenant_id' => 'string',
             'starts_at' => 'datetime',
             'expires_at' => 'datetime',
         ];

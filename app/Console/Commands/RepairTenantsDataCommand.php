@@ -58,6 +58,12 @@ class RepairTenantsDataCommand extends Command
             $this->info('No tenant data JSON needed repair.');
         }
 
+        $referenceRepairs = $this->repairTruncatedTenantReferences();
+
+        if ($referenceRepairs > 0) {
+            $this->info("Repaired {$referenceRepairs} truncated tenant_id reference(s).");
+        }
+
         $mismatches = 0;
 
         foreach (DB::table('tenants')->pluck('id') as $dbId) {
@@ -71,11 +77,70 @@ class RepairTenantsDataCommand extends Command
 
         if ($mismatches > 0) {
             $this->newLine();
-            $this->error('Deploy the latest app code (Tenant VirtualColumn fix, v2.0.60+) then run tenants:repair-data again.');
+            $this->error('Deploy v2.0.62+ (Tenant string ID fix), run optimize:clear, restart PHP-FPM, then tenants:repair-data again.');
 
             return self::FAILURE;
         }
 
         return self::SUCCESS;
+    }
+
+    private function repairTruncatedTenantReferences(): int
+    {
+        $fixed = 0;
+
+        foreach (DB::table('users')->whereNotNull('tenant_id')->get(['id', 'tenant_id']) as $row) {
+            $resolved = $this->resolveTruncatedTenantId((string) $row->tenant_id);
+
+            if ($resolved === null || $resolved === (string) $row->tenant_id) {
+                continue;
+            }
+
+            DB::table('users')->where('id', $row->id)->update(['tenant_id' => $resolved]);
+            $this->line("users#{$row->id}: {$row->tenant_id} → {$resolved}");
+            $fixed++;
+        }
+
+        foreach (DB::table('tenant_user')->get(['user_id', 'tenant_id']) as $row) {
+            $resolved = $this->resolveTruncatedTenantId((string) $row->tenant_id);
+
+            if ($resolved === null || $resolved === (string) $row->tenant_id) {
+                continue;
+            }
+
+            DB::table('tenant_user')
+                ->where('user_id', $row->user_id)
+                ->where('tenant_id', $row->tenant_id)
+                ->delete();
+
+            DB::table('tenant_user')->insertOrIgnore([
+                'user_id' => $row->user_id,
+                'tenant_id' => $resolved,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $this->line("tenant_user user#{$row->user_id}: {$row->tenant_id} → {$resolved}");
+            $fixed++;
+        }
+
+        return $fixed;
+    }
+
+    private function resolveTruncatedTenantId(string $tenantId): ?string
+    {
+        if (Tenant::query()->whereKey($tenantId)->exists()) {
+            return $tenantId;
+        }
+
+        if (! preg_match('/^\d+$/', $tenantId)) {
+            return null;
+        }
+
+        $candidates = Tenant::query()
+            ->where('id', 'like', $tenantId.'-%')
+            ->pluck('id');
+
+        return $candidates->count() === 1 ? (string) $candidates->first() : null;
     }
 }
