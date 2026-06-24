@@ -38,20 +38,8 @@ class UserLoginTokenService
             return false;
         }
 
-        if ($record->session_id && $record->session_id !== $request->session()->getId()) {
-            $this->revoke($user);
-
-            return false;
-        }
-
         $idleMinutes = SecurityPolicy::sessionIdleMinutes();
         if ($idleMinutes > 0 && $record->last_used_at?->copy()->addMinutes($idleMinutes)->isPast()) {
-            $this->revoke($user);
-
-            return false;
-        }
-
-        if ($record->ip_address && $record->ip_address !== $request->ip()) {
             $this->revoke($user);
 
             return false;

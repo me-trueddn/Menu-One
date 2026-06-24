@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Exceptions\PlatformStaffRegistrationBlockedException;
 use App\Http\Controllers\Controller;
+use App\Models\Setting;
 use App\Services\SocialAuthService;
 use App\Services\UserLoginTokenService;
 use App\Support\CaptchaPolicy;
@@ -12,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\InvalidStateException;
 
 class SocialAuthController extends Controller
 {
@@ -23,6 +26,7 @@ class SocialAuthController extends Controller
         abort_unless($this->providerConfigured($provider), 404);
 
         SocialAuthService::applyConfig();
+        Setting::flushCache();
         Session::put('oauth_intent', request('intent', OAuthPolicy::allowLogin() ? 'login' : 'register'));
 
         return Socialite::driver(OAuthPolicy::socialiteDriver($provider))
@@ -54,7 +58,7 @@ class SocialAuthController extends Controller
             $socialUser = Socialite::driver(OAuthPolicy::socialiteDriver($provider))
                 ->redirectUrl(OAuthPolicy::redirectUrl($provider))
                 ->user();
-        } catch (\Laravel\Socialite\Two\InvalidStateException $exception) {
+        } catch (InvalidStateException $exception) {
             report($exception);
 
             return redirect()->route('login')->with('error', __('menu.oauth_state_invalid'));
@@ -68,7 +72,11 @@ class SocialAuthController extends Controller
             return redirect()->route('login')->with('error', __('menu.oauth_failed'));
         }
 
-        $user = SocialAuthService::findOrCreateCustomer($provider, $socialUser);
+        try {
+            $user = SocialAuthService::findOrCreateCustomer($provider, $socialUser);
+        } catch (PlatformStaffRegistrationBlockedException) {
+            return redirect()->route('login')->with('error', __('menu.platform_staff_registration_blocked'));
+        }
 
         if (! $user->is_active) {
             return redirect()->route('login')->with('error', __('menu.account_inactive'));

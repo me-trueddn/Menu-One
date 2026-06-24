@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\PlatformStaffRegistrationBlockedException;
 use App\Models\User;
 use App\Support\OAuthPolicy;
 use Illuminate\Support\Facades\Config;
@@ -52,6 +53,10 @@ class SocialAuthService
                 ->first();
 
             if ($existing) {
+                if ($existing->isPlatformStaffMember()) {
+                    throw new PlatformStaffRegistrationBlockedException;
+                }
+
                 $existing->update([
                     'oauth_provider' => $provider,
                     'oauth_provider_id' => $providerId,

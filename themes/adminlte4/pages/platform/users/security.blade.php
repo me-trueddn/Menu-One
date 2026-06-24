@@ -108,7 +108,7 @@
             <div class="col-md-6 mb-3">
                 <label class="form-label">{{ __('menu.session_idle_minutes') }}</label>
                 <div class="input-group">
-                    <input type="number" name="security_session_idle_minutes" class="form-control" min="5" max="480"
+                    <input type="number" name="security_session_idle_minutes" class="form-control" min="5" max="1440"
                            value="{{ old('security_session_idle_minutes', $settings['security_session_idle_minutes']) }}" required>
                     <span class="input-group-text">{{ __('menu.minutes') }}</span>
                 </div>

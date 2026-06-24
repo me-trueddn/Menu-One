@@ -42,6 +42,8 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
+php artisan oauth:diagnose || true
+
 php artisan version:show
 php artisan tenants:list || {
     echo "HATA: Tenant ID uyumsuz — v2.0.62+ kodu deploy edildi mi? optimize:clear + PHP-FPM restart deneyin."

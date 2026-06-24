@@ -69,6 +69,12 @@ class PrepareProductionCommand extends Command
             PlatformModules::syncPermissions();
             $this->info('Platform module permissions synced.');
 
+            $legacyIdle = (int) Setting::get('security_session_idle_minutes', '30');
+            if ($legacyIdle > 0 && $legacyIdle <= 30) {
+                Setting::set('security_session_idle_minutes', '480', 'security');
+                $this->info('security_session_idle_minutes upgraded from legacy default (30) to 480.');
+            }
+
             $panelUrl = SiteConfig::firstUsablePanelUrl();
 
             if ($panelUrl !== null && SiteUrl::normalize(Setting::get('panel_url')) === null) {

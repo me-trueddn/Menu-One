@@ -36,7 +36,7 @@ class UserSecuritySettingsController extends Controller
             'security_password_history_count' => ['required', 'integer', 'min:0', 'max:24'],
             'security_lockout_attempts' => ['required', 'integer', 'min:3', 'max:20'],
             'security_lockout_minutes' => ['required', 'integer', 'min:1', 'max:1440'],
-            'security_session_idle_minutes' => ['required', 'integer', 'min:5', 'max:480'],
+            'security_session_idle_minutes' => ['required', 'integer', 'min:5', 'max:1440'],
             'security_reset_link_minutes' => ['required', 'integer', 'min:5', 'max:1440'],
             'security_inactive_account_days' => ['required', 'integer', 'min:0', 'max:365'],
             'security_2fa_enabled_globally' => ['nullable', 'boolean'],

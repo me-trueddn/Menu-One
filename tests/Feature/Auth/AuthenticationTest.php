@@ -91,6 +91,50 @@ class AuthenticationTest extends TestCase
         $this->assertSame(0, DB::table('sessions')->where('user_id', $user->id)->count());
     }
 
+    public function test_ip_change_does_not_invalidate_session(): void
+    {
+        Setting::set('security_session_idle_minutes', '480', 'security');
+
+        $user = User::factory()->create();
+        $plainToken = str_repeat('b', 64);
+
+        UserLoginToken::create([
+            'user_id' => $user->id,
+            'token_hash' => hash('sha256', $plainToken),
+            'ip_address' => '10.0.0.1',
+            'user_agent' => 'PHPUnit',
+            'last_used_at' => now(),
+        ]);
+
+        $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.2'])
+            ->actingAs($user)
+            ->withSession(['user_access_token' => $plainToken])
+            ->get(route('profile.edit'))
+            ->assertOk();
+    }
+
+    public function test_session_id_change_does_not_invalidate_session(): void
+    {
+        Setting::set('security_session_idle_minutes', '480', 'security');
+
+        $user = User::factory()->create();
+        $plainToken = str_repeat('c', 64);
+
+        UserLoginToken::create([
+            'user_id' => $user->id,
+            'token_hash' => hash('sha256', $plainToken),
+            'session_id' => 'old-session-id',
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'PHPUnit',
+            'last_used_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->withSession(['user_access_token' => $plainToken])
+            ->get(route('profile.edit'))
+            ->assertOk();
+    }
+
     public function test_idle_session_redirects_to_login(): void
     {
         Setting::set('security_session_idle_minutes', '30', 'security');

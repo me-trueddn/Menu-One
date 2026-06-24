@@ -57,6 +57,27 @@ class CustomerRegistrationMethodTest extends TestCase
         $this->assertTrue($user->isCustomer());
     }
 
+    public function test_oauth_registration_blocks_platform_staff_email(): void
+    {
+        Role::firstOrCreate(['name' => 'platform_admin', 'guard_name' => 'web']);
+
+        $staff = User::factory()->create([
+            'email' => 'staff@example.com',
+            'tenant_id' => null,
+        ]);
+        $staff->assignRole('platform_admin');
+
+        $socialUser = Mockery::mock(SocialiteUser::class);
+        $socialUser->shouldReceive('getId')->andReturn('google-uid-staff');
+        $socialUser->shouldReceive('getEmail')->andReturn('staff@example.com');
+        $socialUser->shouldReceive('getName')->andReturn('Staff');
+        $socialUser->shouldReceive('getNickname')->andReturn(null);
+
+        $this->expectException(\App\Exceptions\PlatformStaffRegistrationBlockedException::class);
+
+        SocialAuthService::findOrCreateCustomer('google', $socialUser);
+    }
+
     public function test_linking_oauth_to_existing_customer_verifies_email(): void
     {
         $existing = User::factory()->create([

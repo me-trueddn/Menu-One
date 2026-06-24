@@ -45,7 +45,7 @@ class OAuthPolicy
 
     public static function clientId(string $provider): string
     {
-        return (string) (Setting::mergedGroup('site', static::defaults())['oauth_'.$provider.'_client_id'] ?? '');
+        return trim((string) (Setting::mergedGroup('site', static::defaults())['oauth_'.$provider.'_client_id'] ?? ''));
     }
 
     public static function clientSecret(string $provider): string

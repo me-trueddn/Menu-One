@@ -56,7 +56,7 @@ class SecurityPolicy
 
     public static function sessionIdleMinutes(): int
     {
-        return static::int('security_session_idle_minutes', 30);
+        return static::int('security_session_idle_minutes', 480);
     }
 
     public static function passwordRules(): Password
@@ -97,7 +97,7 @@ class SecurityPolicy
             'security_password_require_symbol' => '0',
             'security_lockout_attempts' => '5',
             'security_lockout_minutes' => '15',
-            'security_session_idle_minutes' => '30',
+            'security_session_idle_minutes' => '480',
             'security_reset_link_minutes' => '60',
             'security_inactive_account_days' => '0',
             'security_2fa_required' => '0',

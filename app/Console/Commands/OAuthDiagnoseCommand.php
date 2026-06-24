@@ -3,10 +3,13 @@
 namespace App\Console\Commands;
 
 use App\Models\Setting;
+use App\Services\SocialAuthService;
 use App\Support\OAuthPolicy;
 use App\Support\SiteConfig;
 use App\Support\SiteUrl;
+use App\Support\VersionManager;
 use Illuminate\Console\Command;
+use Laravel\Socialite\Facades\Socialite;
 
 class OAuthDiagnoseCommand extends Command
 {
@@ -16,8 +19,19 @@ class OAuthDiagnoseCommand extends Command
 
     public function handle(): int
     {
+        Setting::flushCache();
+
         $panelFromDb = Setting::get('panel_url');
         $usablePanel = SiteConfig::firstUsablePanelUrl();
+
+        try {
+            $versions = new VersionManager(config('version.file'));
+            $appVersion = $versions->current().' (build '.$versions->buildNumber().')';
+        } catch (\Throwable) {
+            $appVersion = 'unknown';
+        }
+
+        $this->line('App version: '.$appVersion);
 
         $this->table(
             ['Key', 'Value'],
@@ -33,16 +47,23 @@ class OAuthDiagnoseCommand extends Command
             $this->newLine();
             $this->info(strtoupper($provider));
 
-            $clientId = OAuthPolicy::clientId($provider);
-            $maskedId = $clientId === ''
-                ? '—'
-                : substr($clientId, 0, 12).'…'.substr($clientId, -20);
+            if (! OAuthPolicy::bool("oauth_{$provider}_enabled")) {
+                $this->line('Enabled: no');
 
-            $this->line('Enabled: '.(OAuthPolicy::bool("oauth_{$provider}_enabled") ? 'yes' : 'no'));
-            $this->line('Client ID: '.$maskedId);
+                continue;
+            }
+
+            $clientId = OAuthPolicy::clientId($provider);
+
+            $this->line('Enabled: yes');
+            $this->line('Client ID: '.($clientId !== '' ? $clientId : '—'));
             $this->line('Secret OK: '.(OAuthPolicy::clientSecret($provider) !== '' ? 'yes' : 'no'));
             $this->line('Secret decrypt failed: '.(OAuthPolicy::clientSecretDecryptFailed($provider) ? 'yes' : 'no'));
             $this->line('Redirect URI: '.OAuthPolicy::redirectUrl($provider));
+
+            if ($provider === 'google' && $clientId !== '' && OAuthPolicy::clientSecret('google') !== '') {
+                $this->line('Live auth redirect_uri: '.$this->probeGoogleRedirectUri());
+            }
         }
 
         if ($usablePanel === null || SiteUrl::normalize($panelFromDb) === null) {
@@ -52,6 +73,28 @@ class OAuthDiagnoseCommand extends Command
             $this->line('Or run: php artisan deploy:prepare-production');
         }
 
+        $this->newLine();
+        $this->comment('Google Console must list the exact Redirect URI above for this Client ID.');
+        $this->comment('If OAuth app is in Testing mode, add login emails under OAuth consent screen → Test users.');
+
         return self::SUCCESS;
+    }
+
+    private function probeGoogleRedirectUri(): string
+    {
+        SocialAuthService::applyConfig();
+
+        $driver = Socialite::driver('google')
+            ->redirectUrl(OAuthPolicy::redirectUrl('google'))
+            ->stateless();
+
+        $reflection = new \ReflectionClass($driver);
+        $method = $reflection->getMethod('getAuthUrl');
+        $method->setAccessible(true);
+
+        $authUrl = (string) $method->invoke($driver, 'diagnose');
+        parse_str((string) parse_url($authUrl, PHP_URL_QUERY), $params);
+
+        return (string) ($params['redirect_uri'] ?? '—');
     }
 }

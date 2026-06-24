@@ -2,11 +2,11 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Rules\AvailableCustomerEmail;
 use App\Rules\ValidCaptcha;
 use App\Support\CaptchaPolicy;
 use App\Support\SecurityPolicy;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class RegisterRequest extends FormRequest
@@ -21,7 +21,7 @@ class RegisterRequest extends FormRequest
     {
         $rules = [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')->whereNull('tenant_id')],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', new AvailableCustomerEmail],
             'phone' => ['required', 'string', 'max:30'],
             'password' => ['required', 'confirmed', SecurityPolicy::passwordRules()],
         ];

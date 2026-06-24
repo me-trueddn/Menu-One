@@ -13,7 +13,6 @@ use App\Support\SettingsDefaults;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class SiteSettingsController extends Controller
@@ -188,7 +187,7 @@ class SiteSettingsController extends Controller
         }
 
         if (! empty($validated['oauth_google_client_secret'])) {
-            $pairs['oauth_google_client_secret'] = Crypt::encryptString($validated['oauth_google_client_secret']);
+            $pairs['oauth_google_client_secret'] = Crypt::encryptString(trim($validated['oauth_google_client_secret']));
         }
 
         if (! empty($validated['oauth_microsoft_client_secret'])) {
