@@ -17,13 +17,13 @@ class SocialAuthService
         Config::set('services.google', [
             'client_id' => OAuthPolicy::clientId('google'),
             'client_secret' => OAuthPolicy::clientSecret('google'),
-            'redirect' => url('/auth/google/callback'),
+            'redirect' => OAuthPolicy::redirectUrl('google'),
         ]);
 
         Config::set('services.azure', [
             'client_id' => OAuthPolicy::clientId('microsoft'),
             'client_secret' => OAuthPolicy::clientSecret('microsoft'),
-            'redirect' => url('/auth/microsoft/callback'),
+            'redirect' => OAuthPolicy::redirectUrl('microsoft'),
             'tenant' => 'common',
         ]);
     }

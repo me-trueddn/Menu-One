@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Services\SocialAuthService;
 use App\Services\UserLoginTokenService;
+use App\Support\CaptchaPolicy;
 use App\Support\OAuthPolicy;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,6 +26,7 @@ class SocialAuthController extends Controller
         Session::put('oauth_intent', request('intent', OAuthPolicy::allowLogin() ? 'login' : 'register'));
 
         return Socialite::driver(OAuthPolicy::socialiteDriver($provider))
+            ->redirectUrl(OAuthPolicy::redirectUrl($provider))
             ->redirect();
     }
 
@@ -34,6 +36,10 @@ class SocialAuthController extends Controller
         abort_unless($this->providerConfigured($provider), 404);
 
         $intent = Session::pull('oauth_intent', 'login');
+
+        if ($intent === 'register' && ! CaptchaPolicy::registrationEnabled()) {
+            return redirect()->route('login')->with('error', __('menu.registration_disabled'));
+        }
 
         if ($intent === 'register' && ! OAuthPolicy::allowRegister()) {
             return redirect()->route('login')->with('error', __('menu.registration_disabled'));
@@ -45,9 +51,19 @@ class SocialAuthController extends Controller
 
         try {
             SocialAuthService::applyConfig();
-            $socialUser = Socialite::driver(OAuthPolicy::socialiteDriver($provider))->user();
+            $socialUser = Socialite::driver(OAuthPolicy::socialiteDriver($provider))
+                ->redirectUrl(OAuthPolicy::redirectUrl($provider))
+                ->user();
+        } catch (\Laravel\Socialite\Two\InvalidStateException $exception) {
+            report($exception);
+
+            return redirect()->route('login')->with('error', __('menu.oauth_state_invalid'));
         } catch (\Throwable $exception) {
             report($exception);
+
+            if (OAuthPolicy::clientSecretDecryptFailed($provider)) {
+                return redirect()->route('login')->with('error', __('menu.oauth_secret_decrypt_failed'));
+            }
 
             return redirect()->route('login')->with('error', __('menu.oauth_failed'));
         }

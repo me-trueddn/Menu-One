@@ -173,6 +173,9 @@
                         <label class="form-label">Client Secret</label>
                         <input type="password" name="oauth_google_client_secret" class="form-control"
                                placeholder="{{ $settings['has_oauth_google_secret'] ? '••••••••' : '' }}">
+                        @if($settings['oauth_google_secret_decrypt_failed'])
+                            <div class="form-text text-danger">{{ __('menu.oauth_secret_decrypt_failed_hint') }}</div>
+                        @endif
                     </div>
                     <div class="form-text">{{ __('menu.oauth_redirect') }}: <code>{{ $settings['oauth_google_redirect'] }}</code></div>
                 </div>
@@ -193,6 +196,9 @@
                         <label class="form-label">Client Secret</label>
                         <input type="password" name="oauth_microsoft_client_secret" class="form-control"
                                placeholder="{{ $settings['has_oauth_microsoft_secret'] ? '••••••••' : '' }}">
+                        @if($settings['oauth_microsoft_secret_decrypt_failed'])
+                            <div class="form-text text-danger">{{ __('menu.oauth_secret_decrypt_failed_hint') }}</div>
+                        @endif
                     </div>
                     <div class="form-text">{{ __('menu.oauth_redirect') }}: <code>{{ $settings['oauth_microsoft_redirect'] }}</code></div>
                 </div>

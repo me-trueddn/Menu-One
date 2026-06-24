@@ -63,6 +63,29 @@ class OAuthPolicy
         }
     }
 
+    public static function hasStoredClientSecret(string $provider): bool
+    {
+        $encrypted = Setting::get('oauth_'.$provider.'_client_secret');
+
+        return is_string($encrypted) && trim($encrypted) !== '';
+    }
+
+    public static function clientSecretDecryptFailed(string $provider): bool
+    {
+        return static::hasStoredClientSecret($provider) && static::clientSecret($provider) === '';
+    }
+
+    public static function redirectUrl(string $provider): string
+    {
+        $base = rtrim(SiteConfig::panelUrl(), '/');
+
+        if ($base === '' || $base === 'http://127.0.0.1:8000') {
+            return url("/auth/{$provider}/callback");
+        }
+
+        return "{$base}/auth/{$provider}/callback";
+    }
+
     public static function allowLogin(): bool
     {
         return static::bool('oauth_allow_login');

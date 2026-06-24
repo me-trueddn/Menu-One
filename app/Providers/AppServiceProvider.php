@@ -13,6 +13,7 @@ use App\Services\UserImpersonationService;
 use App\Services\UserLoginTokenService;
 use App\Support\TenantAccess;
 use App\Support\SettingsDefaults;
+use App\Support\SiteConfig;
 use App\Support\VersionManager;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Support\Facades\App;
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\Models\Role;
@@ -71,6 +73,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->applyMailSettingsFromDatabase();
         $this->applyBrandingDefaults();
+        $this->applyPanelUrl();
         $this->registerSocialiteProviders();
         $this->applyAppVersion();
         $this->registerLogoutSessionCleanup();
@@ -100,6 +103,29 @@ class AppServiceProvider extends ServiceProvider
         } catch (\Throwable) {
             Config::set('app.version', '1.0.0');
             Config::set('app.build', 0);
+        }
+    }
+
+    protected function applyPanelUrl(): void
+    {
+        if (! $this->settingsTableExists()) {
+            return;
+        }
+
+        try {
+            $panelUrl = rtrim((string) SiteConfig::panelUrl(), '/');
+
+            if ($panelUrl === '' || $panelUrl === 'http://127.0.0.1:8000') {
+                return;
+            }
+
+            URL::forceRootUrl($panelUrl);
+
+            if (str_starts_with($panelUrl, 'https://')) {
+                URL::forceScheme('https');
+            }
+        } catch (\Throwable) {
+            //
         }
     }
 
