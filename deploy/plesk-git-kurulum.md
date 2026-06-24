@@ -7,7 +7,19 @@ Subdomain yeni oluşturulduysa Git’i bu sırayla kurun. Olmazsa: `deploy/plesk
 
 ---
 
-## Ön koşullar
+## Git ile gelmeyen dosyalar (500 sebebi!)
+
+Git **şunları çekmez** (`.gitignore`):
+
+| Eksik | Çözüm |
+|-------|--------|
+| `vendor/` | Composer: `install --no-dev --optimize-autoloader` |
+| `public/build/` | Node: `install --include=dev` + `run build` **veya** PC'den `public/build` zip yükle |
+| `.env` | Elle oluşturun (`deploy/plesk-panel.env`) |
+
+`public/build/manifest.json` yoksa site **500** verir.
+
+---
 
 - Plesk **Git** eklentisi yüklü
 - **Laravel** / **PHP Composer** / **Node.js** eklentileri aktif

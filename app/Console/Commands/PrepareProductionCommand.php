@@ -33,6 +33,19 @@ class PrepareProductionCommand extends Command
             $this->info("panel_url → {$panelUrl}");
         }
 
+        foreach ([
+            storage_path('framework/cache/central'),
+            storage_path('framework/cache/data'),
+            storage_path('framework/sessions'),
+            storage_path('framework/views'),
+            storage_path('logs'),
+        ] as $directory) {
+            if (! is_dir($directory)) {
+                mkdir($directory, 0775, true);
+                $this->line("Created {$directory}");
+            }
+        }
+
         foreach (['cache', 'cache_locks', 'sessions', 'user_login_tokens'] as $table) {
             if (! Schema::hasTable($table)) {
                 continue;

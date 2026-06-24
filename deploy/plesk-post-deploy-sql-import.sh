@@ -19,10 +19,10 @@ php artisan deploy:prepare-production
 php artisan storage:link --force 2>/dev/null || true
 
 if command -v npm >/dev/null 2>&1; then
-    npm install --no-audit --no-fund
+    npm install --include=dev --no-audit --no-fund
     npm run build
 else
-    echo "UYARI: npm bulunamadı. Node.js eklentisinde ci + run build çalıştırın."
+    echo "UYARI: npm yok. Bilgisayardan public/build klasörünü yükleyin (Git build içermez)."
 fi
 
 php artisan config:cache
