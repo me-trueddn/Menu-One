@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\TenantLicenseService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class TableDayScopeTest extends TestCase
@@ -29,7 +30,9 @@ class TableDayScopeTest extends TestCase
     {
         parent::setUp();
 
-        \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'waiter', 'guard_name' => 'web']);
+        Carbon::setTestNow(Carbon::parse('2026-06-19 12:00:00'));
+
+        Role::firstOrCreate(['name' => 'waiter', 'guard_name' => 'web']);
 
         LicenseType::firstOrCreate(
             ['slug' => 'trial-30'],

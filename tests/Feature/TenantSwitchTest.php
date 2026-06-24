@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\LicenseType;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\TenantLicenseService;
 use App\Support\TenantAccess;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
@@ -20,6 +22,22 @@ class TenantSwitchTest extends TestCase
         foreach (['user', 'cafe_admin'] as $role) {
             Role::firstOrCreate(['name' => $role, 'guard_name' => 'web']);
         }
+
+        LicenseType::firstOrCreate(
+            ['slug' => 'trial-30'],
+            [
+                'name' => 'Trial',
+                'duration_days' => 30,
+                'is_default' => true,
+                'is_active' => true,
+                'sort_order' => 1,
+            ]
+        );
+    }
+
+    private function assignLicense(Tenant $tenant): void
+    {
+        app(TenantLicenseService::class)->assignDefault($tenant);
     }
 
     public function test_user_with_multiple_tenants_can_switch_active_tenant(): void
@@ -37,6 +55,9 @@ class TenantSwitchTest extends TestCase
             'slug' => 'cafe-b',
             'is_active' => true,
         ]);
+
+        $this->assignLicense($tenantA);
+        $this->assignLicense($tenantB);
 
         $user = User::factory()->create();
         $user->assignRole('user');

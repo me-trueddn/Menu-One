@@ -9,6 +9,7 @@ use App\Support\TenantIdMatcher;
 use Database\Seeders\LicenseTypeSeeder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Role;
 
 class RepairTenantsDataCommand extends Command
 {
@@ -166,6 +167,9 @@ class RepairTenantsDataCommand extends Command
     private function repairCafeAdminRoles(): int
     {
         $fixed = 0;
+
+        Role::firstOrCreate(['name' => 'user', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'cafe_admin', 'guard_name' => 'web']);
 
         User::query()
             ->role('user')
