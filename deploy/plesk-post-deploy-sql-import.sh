@@ -23,6 +23,7 @@ fi
 
 php artisan package:discover --ansi
 
+php artisan optimize:clear
 php artisan config:clear
 php artisan deploy:prepare-production
 php artisan storage:link --force 2>/dev/null || true
@@ -40,6 +41,12 @@ fi
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
+
+php artisan version:show
+php artisan tenants:list || {
+    echo "HATA: Tenant ID uyumsuz — v2.0.62+ kodu deploy edildi mi? optimize:clear + PHP-FPM restart deneyin."
+    exit 1
+}
 
 chmod -R ug+rwx,o-rwx storage bootstrap/cache 2>/dev/null || true
 
