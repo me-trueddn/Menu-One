@@ -1,12 +1,8 @@
 #!/bin/bash
 # Plesk deployment actions — panel.trueddn.com.tr
-# Plesk Git "Ek deployment komutları" alanına yapıştırılabilir.
-#
-# Seçenek A — Boş DB: migrate + seed (aşağıdaki script)
-# Seçenek B — Dev SQL import: phpMyAdmin'den menu_one.sql yükle, sonra Artisan:
-#   deploy:prepare-production
-#   (migrate:fresh ve db:seed ÇALIŞTIRMAYIN — tablolar zaten var)
-
+# Plesk Git deployment — boş veritabanı (migrate + seed)
+# SQL import kullanıyorsanız: deploy/plesk-post-deploy-sql-import.sh
+# Kurulum rehberi: deploy/plesk-git-kurulum.md
 set -e
 
 cd "${APPLICATION_ROOT:-/var/www/vhosts/trueddn.com.tr/panel.trueddn.com.tr}"
