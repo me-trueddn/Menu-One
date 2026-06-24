@@ -8,12 +8,13 @@ use App\Models\Setting;
 use App\Models\TableCategory;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\MailConfigService;
 use App\Services\SupportSessionService;
 use App\Services\UserImpersonationService;
 use App\Services\UserLoginTokenService;
-use App\Support\TenantAccess;
 use App\Support\SettingsDefaults;
 use App\Support\SiteConfig;
+use App\Support\TenantAccess;
 use App\Support\VersionManager;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Support\Facades\App;
@@ -25,6 +26,8 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use SocialiteProviders\Azure\Provider;
+use SocialiteProviders\Manager\SocialiteWasCalled;
 use Spatie\Permission\Models\Role;
 
 class AppServiceProvider extends ServiceProvider
@@ -113,9 +116,9 @@ class AppServiceProvider extends ServiceProvider
         }
 
         try {
-            $panelUrl = rtrim((string) SiteConfig::panelUrl(), '/');
+            $panelUrl = SiteConfig::firstUsablePanelUrl();
 
-            if ($panelUrl === '' || $panelUrl === 'http://127.0.0.1:8000') {
+            if ($panelUrl === null) {
                 return;
             }
 
@@ -131,8 +134,8 @@ class AppServiceProvider extends ServiceProvider
 
     protected function registerSocialiteProviders(): void
     {
-        Event::listen(function (\SocialiteProviders\Manager\SocialiteWasCalled $event) {
-            $event->extendSocialite('azure', \SocialiteProviders\Azure\Provider::class);
+        Event::listen(function (SocialiteWasCalled $event) {
+            $event->extendSocialite('azure', Provider::class);
         });
     }
 
@@ -156,7 +159,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         try {
-            \App\Services\MailConfigService::apply([]);
+            MailConfigService::apply([]);
 
             $resetMinutes = (int) Setting::get('security_reset_link_minutes', 60);
             if ($resetMinutes > 0) {

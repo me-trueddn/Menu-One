@@ -32,7 +32,18 @@ class SiteConfig
 
     public static function panelUrl(): string
     {
-        return (string) static::get('panel_url', config('app.url'));
+        return static::firstUsablePanelUrl() ?? 'http://127.0.0.1:8000';
+    }
+
+    public static function firstUsablePanelUrl(): ?string
+    {
+        $fromDb = Schema::hasTable('settings') ? Setting::get('panel_url') : null;
+
+        return SiteUrl::firstUsable(
+            $fromDb,
+            config('site.panel_url'),
+            config('app.url'),
+        );
     }
 
     public static function mainSiteUrl(): string

@@ -4,6 +4,8 @@ namespace App\Console\Commands;
 
 use App\Models\Setting;
 use App\Support\PlatformModules;
+use App\Support\SiteConfig;
+use App\Support\SiteUrl;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -63,9 +65,16 @@ class PrepareProductionCommand extends Command
             $this->line($migrateOutput);
         }
 
-        if (Schema::hasTable('permissions')) {
+        if (Schema::hasTable('settings')) {
             PlatformModules::syncPermissions();
             $this->info('Platform module permissions synced.');
+
+            $panelUrl = SiteConfig::firstUsablePanelUrl();
+
+            if ($panelUrl !== null && SiteUrl::normalize(Setting::get('panel_url')) === null) {
+                Setting::set('panel_url', $panelUrl, 'site');
+                $this->info("panel_url repaired in DB → {$panelUrl}");
+            }
         }
 
         Artisan::call('tenants:repair-data');

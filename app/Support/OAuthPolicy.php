@@ -77,13 +77,13 @@ class OAuthPolicy
 
     public static function redirectUrl(string $provider): string
     {
-        $base = rtrim(SiteConfig::panelUrl(), '/');
+        $base = SiteConfig::firstUsablePanelUrl();
 
-        if ($base === '' || $base === 'http://127.0.0.1:8000') {
-            return url("/auth/{$provider}/callback");
+        if ($base === null) {
+            $base = rtrim((string) config('app.url'), '/');
         }
 
-        return "{$base}/auth/{$provider}/callback";
+        return rtrim($base, '/')."/auth/{$provider}/callback";
     }
 
     public static function allowLogin(): bool

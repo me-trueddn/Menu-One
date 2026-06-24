@@ -7,7 +7,6 @@ use App\Models\User;
 use App\Services\SocialAuthService;
 use App\Support\OAuthPolicy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Config;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
 use Laravel\Socialite\Facades\Socialite;
 use Mockery;
@@ -23,6 +22,18 @@ class SocialAuthTest extends TestCase
         parent::setUp();
 
         Role::firstOrCreate(['name' => 'user', 'guard_name' => 'web']);
+    }
+
+    public function test_oauth_redirect_falls_back_to_env_when_db_panel_url_is_localhost(): void
+    {
+        config(['site.panel_url' => 'https://panel.example.com', 'app.url' => 'http://127.0.0.1:8000']);
+
+        Setting::set('panel_url', 'http://127.0.0.1:8000', 'site');
+
+        $this->assertSame(
+            'https://panel.example.com/auth/google/callback',
+            OAuthPolicy::redirectUrl('google')
+        );
     }
 
     public function test_oauth_redirect_uses_panel_url_from_settings(): void
