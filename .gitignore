@@ -1,11 +1,10 @@
 /.phpunit.cache
 /node_modules
-/public/build
 /public/hot
 /public/storage
 /storage/*.key
 /storage/pail
-/vendor
+# vendor/ ve public/build/ Git'te — Plesk Composer/npm güvenilir değil
 .env
 .env.backup
 .env.production
@@ -21,3 +20,6 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+Menu-One-plesk.zip
+Menu-One-vendor.zip
+vendor.zip

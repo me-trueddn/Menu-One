@@ -1,0 +1,43 @@
+{
+  "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff": {
+    "file": "assets/bootstrap-icons-BeopsB42.woff",
+    "src": "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff"
+  },
+  "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff2": {
+    "file": "assets/bootstrap-icons-mSm7cUeB.woff2",
+    "src": "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff2"
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-Bn_PvaQq.css",
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/css/themes/adminlte4.css": {
+    "file": "assets/adminlte4-DZueyJOa.css",
+    "src": "resources/css/themes/adminlte4.css",
+    "isEntry": true
+  },
+  "resources/css/themes/login.css": {
+    "file": "assets/login-8xv2RKaO.css",
+    "src": "resources/css/themes/login.css",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-CkRrTZh0.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  },
+  "resources/js/themes/adminlte4.js": {
+    "file": "assets/adminlte4-BM3dagcj.js",
+    "name": "adminlte4",
+    "src": "resources/js/themes/adminlte4.js",
+    "isEntry": true
+  },
+  "resources/js/themes/login.js": {
+    "file": "assets/login-PT2bq_hT.js",
+    "name": "login",
+    "src": "resources/js/themes/login.js",
+    "isEntry": true
+  }
+}

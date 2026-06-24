@@ -9,27 +9,15 @@ Subdomain yeni oluşturulduysa Git’i bu sırayla kurun. Olmazsa: `deploy/plesk
 
 ---
 
-## Git ile gelmeyen dosyalar (500 sebebi!)
+## Git ile gelen / gelmeyen dosyalar
 
-Git **şunları çekmez** (`.gitignore`):
+| Dosya | Git |
+|-------|-----|
+| `vendor/` | **Evet** (Plesk Composer güvenilir değil) |
+| `public/build/` | **Evet** (Plesk npm güvenilir değil) |
+| `.env` | Hayır — elle oluşturun |
 
-| Eksik | Çözüm |
-|-------|--------|
-| `vendor/` | Composer: `install --no-dev --optimize-autoloader` (Her Git pull sonrası!) |
-| `vendor/spatie` yok | `HasRoles not found` → Composer çalıştırılmamış |
-| `public/build/` | Node: `install --include=dev` + `run build` **veya** PC'den `public/build` zip yükle |
-| `.env` | Elle oluşturun (`deploy/plesk-panel.env`) |
-
-`public/build/manifest.json` yoksa site **500** verir.
-
-### Composer çalışmıyorsa — vendor zip (PC'den)
-
-```powershell
-cd C:\Users\faltun\Desktop\Menu-One
-.\deploy\create-plesk-vendor-zip.ps1
-```
-
-Plesk Files: `vendor` klasörünü sil → `Menu-One-vendor.zip` yükle → `vendor/` içine çıkart → Artisan: `package:discover` → `config:cache`
+`composer.lock` değişince bilgisayarda `composer install --no-dev` → `git add vendor` → push.
 
 ---
 

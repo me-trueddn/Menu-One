@@ -1,7 +1,6 @@
 #!/bin/bash
 # Plesk Git deployment — SQL import sonrası (menu_one.sql)
-# Git "Ek deployment komutları" alanına yapıştırın.
-# migrate / db:seed YOK.
+# vendor/ ve public/build/ Git ile gelir; composer/npm yedek olarak çalışır.
 
 set -e
 
@@ -12,10 +11,13 @@ if [ ! -f .env ]; then
     exit 1
 fi
 
-composer install --no-dev --optimize-autoloader --no-interaction
+if [ ! -d vendor/spatie/laravel-permission ]; then
+    echo "vendor Git'te yok veya eksik — composer install çalıştırılıyor..."
+    composer install --no-dev --optimize-autoloader --no-interaction
+fi
 
 if ! php -r 'require "vendor/autoload.php"; exit(class_exists(\Spatie\Permission\PermissionServiceProvider::class) && class_exists(\Laravel\Socialite\SocialiteServiceProvider::class) ? 0 : 1);'; then
-    echo "HATA: vendor eksik (spatie/permission veya socialite yok). composer install tekrar çalıştırın."
+    echo "HATA: vendor eksik (spatie/permission veya socialite yok)."
     exit 1
 fi
 
@@ -25,11 +27,14 @@ php artisan config:clear
 php artisan deploy:prepare-production
 php artisan storage:link --force 2>/dev/null || true
 
-if command -v npm >/dev/null 2>&1; then
-    npm install --include=dev --no-audit --no-fund
-    npm run build
-else
-    echo "UYARI: npm yok. Bilgisayardan public/build klasörünü yükleyin (Git build içermez)."
+if [ ! -f public/build/manifest.json ]; then
+    echo "public/build eksik — npm build çalıştırılıyor..."
+    if command -v npm >/dev/null 2>&1; then
+        npm install --include=dev --no-audit --no-fund
+        npm run build
+    else
+        echo "UYARI: npm yok ve build yok. Git'te public/build commit edin."
+    fi
 fi
 
 php artisan config:cache

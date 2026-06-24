@@ -1,109 +1,67 @@
 # Menu-One — Plesk güncelleme (Git pull)
 
-İlk kurulumda `vendor` ve `public/build` zip ile yüklendi — **bu normal**, Git bu dosyaları taşımaz.
-
-Bundan sonra her güncelleme **otomatik deploy script** ile yapılmalı; elle zip gerekmez.
+`vendor/` ve `public/build/` **Git ile gelir** (Plesk Composer/npm yedek).
 
 ---
 
-## Bir kez ayarlayın (Plesk Git)
+## Bilgisayarda (kod değişikliği sonrası)
 
-**Git** → Repository Settings → **Ek deployment komutları**
+`composer.lock` veya `package.json` değiştiyse önce yerelde:
 
-`deploy/plesk-post-deploy-sql-import.sh` dosyasının **tüm içeriğini** yapıştırın.
+```powershell
+composer install --no-dev
+npm run build
+git add vendor public/build
+```
 
-| Ayar | Değer |
-|------|--------|
-| Deployment mode | **Automatic** (push/pull sonrası script çalışsın) |
-| Deploy to | `/var/www/vhosts/trueddn.com.tr/panel.trueddn.com.tr` |
+Sonra normal commit + push:
 
-`.env` dosyasına dokunulmamalı (Plesk’te koruma varsa işaretleyin).
+```powershell
+git add .
+git commit -m "..."
+git push origin main
+```
 
 ---
 
-## Her kod güncellemesinde (sizin yapmanız gereken)
+## Plesk'te
 
-1. Bilgisayarda: `git push origin main`
-2. Plesk: **Git → Pull** (veya automatic deploy bekleyin)
+1. **Menu-One.git** → **Şimdi çek** → **Şimdi dağıt**
+2. `laravel_aa176b` ile **aynı anda dağıtma** — o depo iskelet kodu yazar
 
-Script otomatik çalışır:
-- `composer install --no-dev`
-- vendor kontrolü (spatie, socialite)
+**Menu-One.git** → ⚙ → **Ek deployment komutları**: `deploy/plesk-post-deploy-sql-import.sh`
+
+---
+
+## Her pull sonrası (otomatik script)
+
+- vendor/build Git'ten kopyalanır
 - `deploy:prepare-production`
-- `npm install --include=dev` + `npm run build`
-- config / route / view cache
+- cache
 
-**Elle zip yüklemenize gerek yok.**
-
----
-
-## Git pull sonrası kontrol (isteğe bağlı)
-
-| Dosya | Olması gereken |
-|-------|----------------|
-| `vendor/spatie/laravel-permission` | Var |
-| `public/build/manifest.json` | Var |
-
-Yoksa deploy script hata vermiştir — Git ekranındaki **deploy log** çıktısına bakın.
+Elle zip **gerekmez** (vendor/build Git'te güncel ise).
 
 ---
 
-## Deploy script çalışmazsa (manuel yedek)
+## composer.lock değişince (önemli)
 
-Sırayla Plesk kutularında:
+Plesk Composer güvenilir değil → **vendor'ı PC'de güncelleyip Git'e commit edin:**
 
-**Composer:**
+```powershell
+composer update paket-adi --no-dev
+# veya
+composer install --no-dev
+git add composer.lock vendor
+git commit -m "chore: update vendor"
+git push
 ```
-install --no-dev --optimize-autoloader
-```
-
-**Node.js:**
-```
-install --include=dev
-```
-```
-run build
-```
-
-**Artisan:**
-```
-config:clear
-```
-```
-deploy:prepare-production
-```
-```
-config:cache
-```
-```
-route:cache
-```
-```
-view:cache
-```
-
-`migrate` / `db:seed` **çalıştırmayın** (SQL import kullanıyorsanız).
-
----
-
-## Ne zaman elle müdahale gerekir?
-
-| Durum | Ne yapın |
-|-------|----------|
-| Normal kod güncellemesi | Sadece Git pull |
-| `composer.lock` değişti | Pull yeterli (script composer çalıştırır) |
-| `package.json` / CSS-JS değişti | Pull yeterli (script npm build çalıştırır) |
-| Composer sunucuda hep bozuk | Bir kez `create-plesk-vendor-zip.ps1`, sonra script’i düzeltin |
-| npm sunucuda hep bozuk | Bir kez PC’den `public/build` zip |
-| Veritabanı şema değişikliği | phpMyAdmin yedek → Artisan: `migrate --force` (dikkatli) |
 
 ---
 
 ## Özet
 
 ```
-İlk kurulum  → .env + SQL + (vendor zip) + (build zip)  ← elle, bir kez
-Güncelleme   → git push + Plesk Git pull               ← otomatik script
+Geliştirme  → composer install + npm run build (gerekirse)
+Commit      → vendor + public/build dahil
+Plesk       → Menu-One.git pull + deploy
 ```
-
-Deploy script ayarlı değilse her pull sadece PHP dosyalarını günceller; `vendor` ve `build` eski kalır — bugün yaşadığınız sorun bu yüzden oldu.
