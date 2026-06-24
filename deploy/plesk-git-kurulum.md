@@ -5,6 +5,8 @@ Repo: **https://github.com/me-trueddn/Menu-One.git** (branch: `main`)
 
 Subdomain yeni oluşturulduysa Git’i bu sırayla kurun. Olmazsa: `deploy/plesk-ui-kurulum.md` (zip upload).
 
+**Güncelleme (kurulumdan sonra):** `deploy/plesk-guncelleme.md`
+
 ---
 
 ## Git ile gelmeyen dosyalar (500 sebebi!)
