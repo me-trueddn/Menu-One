@@ -20,4 +20,17 @@ class SiteUrlTest extends TestCase
             SiteUrl::firstUsable('http://127.0.0.1:8000', 'https://panel.example.com')
         );
     }
+
+    public function test_first_usable_uses_request_host_when_config_urls_are_local(): void
+    {
+        $this->app['request'] = \Illuminate\Http\Request::create(
+            'https://panel.example.com/login',
+            'GET',
+        );
+
+        $this->assertSame(
+            'https://panel.example.com',
+            SiteUrl::firstUsable('http://127.0.0.1:8000', 'http://localhost')
+        );
+    }
 }

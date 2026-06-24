@@ -47,8 +47,12 @@ class SiteUrl
             }
         }
 
-        if (! app()->runningInConsole() && request()->hasHeader('Host')) {
-            return static::normalize(request()->root());
+        if (request()->getHost() !== '') {
+            $normalized = static::normalize(request()->root());
+
+            if ($normalized !== null) {
+                return $normalized;
+            }
         }
 
         return null;

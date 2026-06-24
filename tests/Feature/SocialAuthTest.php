@@ -36,6 +36,25 @@ class SocialAuthTest extends TestCase
         );
     }
 
+    public function test_oauth_redirect_uses_request_url_when_panel_urls_are_invalid(): void
+    {
+        config([
+            'site.panel_url' => 'http://127.0.0.1:8000',
+            'app.url' => 'http://127.0.0.1:8000',
+        ]);
+
+        Setting::set('panel_url', 'http://127.0.0.1:8000', 'site');
+
+        $this->app['request'] = \Illuminate\Http\Request::create(
+            'https://panel.example.com/login',
+            'GET',
+        );
+
+        $redirect = OAuthPolicy::redirectUrl('google');
+
+        $this->assertSame('https://panel.example.com/auth/google/callback', $redirect);
+    }
+
     public function test_oauth_redirect_uses_panel_url_from_settings(): void
     {
         Setting::setMany([

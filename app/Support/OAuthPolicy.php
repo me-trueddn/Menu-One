@@ -80,6 +80,10 @@ class OAuthPolicy
         $base = SiteConfig::firstUsablePanelUrl();
 
         if ($base === null) {
+            if (request()->getHost() !== '') {
+                return url("/auth/{$provider}/callback");
+            }
+
             $base = rtrim((string) config('app.url'), '/');
         }
 
