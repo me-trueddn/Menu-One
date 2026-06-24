@@ -4,6 +4,8 @@ namespace App\Console\Commands;
 
 use App\Models\LicenseType;
 use App\Models\Tenant;
+use App\Models\User;
+use App\Support\TenantIdMatcher;
 use Database\Seeders\LicenseTypeSeeder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -59,6 +61,7 @@ class RepairTenantsDataCommand extends Command
         }
 
         $referenceRepairs = $this->repairTruncatedTenantReferences();
+        $referenceRepairs += $this->repairPlatformStaffTenantIds();
 
         if ($referenceRepairs > 0) {
             $this->info("Repaired {$referenceRepairs} truncated tenant_id reference(s).");
@@ -129,18 +132,33 @@ class RepairTenantsDataCommand extends Command
 
     private function resolveTruncatedTenantId(string $tenantId): ?string
     {
-        if (Tenant::query()->whereKey($tenantId)->exists()) {
-            return $tenantId;
-        }
+        return TenantIdMatcher::resolveFullId($tenantId);
+    }
 
-        if (! preg_match('/^\d+$/', $tenantId)) {
-            return null;
-        }
+    private function repairPlatformStaffTenantIds(): int
+    {
+        $fixed = 0;
 
-        $candidates = Tenant::query()
-            ->where('id', 'like', $tenantId.'-%')
-            ->pluck('id');
+        User::query()
+            ->whereNotNull('tenant_id')
+            ->each(function (User $user) use (&$fixed) {
+                if ($user->isSuperAdmin()) {
+                    $user->update(['tenant_id' => null]);
+                    $this->line("Cleared tenant_id on super admin #{$user->id} ({$user->email})");
+                    $fixed++;
 
-        return $candidates->count() === 1 ? (string) $candidates->first() : null;
+                    return;
+                }
+
+                if ($user->hasAnyRole(['cafe_admin', 'waiter', 'kitchen', 'cashier', 'user'])) {
+                    return;
+                }
+
+                $user->update(['tenant_id' => null]);
+                $this->line("Cleared tenant_id on platform staff #{$user->id} ({$user->email})");
+                $fixed++;
+            });
+
+        return $fixed;
     }
 }

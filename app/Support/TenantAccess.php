@@ -41,7 +41,7 @@ class TenantAccess
             return null;
         }
 
-        if ($user->canAccessPlatformPanel() && session('support_tenant_mode')) {
+        if (($user->canAccessPlatformPanel() || $user->isPlatformStaffMember()) && session('support_tenant_mode')) {
             $sessionId = session('active_tenant_id');
 
             if (is_string($sessionId) && $sessionId !== '') {
@@ -89,7 +89,7 @@ class TenantAccess
 
     public static function setActiveTenant(User $user, string $tenantId, bool $support = false): void
     {
-        if ($support && ($user->isSuperAdmin() || $user->canAccessPlatformPanel())) {
+        if ($support && ($user->isSuperAdmin() || $user->canAccessPlatformPanel() || $user->isPlatformStaffMember())) {
             session(['active_tenant_id' => $tenantId, 'support_tenant_mode' => true]);
 
             return;
@@ -116,7 +116,7 @@ class TenantAccess
         }
 
         return session('support_tenant_mode')
-            && ($user->isSuperAdmin() || $user->canAccessPlatformPanel());
+            && ($user->isSuperAdmin() || $user->canAccessPlatformPanel() || $user->isPlatformStaffMember());
     }
 
     public static function clearSupportMode(): void
@@ -126,7 +126,7 @@ class TenantAccess
 
     public static function resolveSupportTenantId(User $user): ?string
     {
-        if ($user->isSuperAdmin() || $user->canAccessPlatformPanel()) {
+        if ($user->isSuperAdmin() || $user->canAccessPlatformPanel() || $user->isPlatformStaffMember()) {
             $sessionId = session('active_tenant_id');
 
             return is_string($sessionId) && $sessionId !== '' ? $sessionId : null;

@@ -59,7 +59,7 @@ class InitializeTenancy
             return null;
         }
 
-        $activeTenantId = TenantAccess::resolveActiveTenantId($user);
+        $activeTenantId = TenantAccess::resolveLinkedTenantId($user);
 
         return $activeTenantId ? Tenant::find($activeTenantId) : null;
     }

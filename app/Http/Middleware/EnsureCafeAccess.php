@@ -30,7 +30,8 @@ class EnsureCafeAccess
         $tenantId = (string) $tenant->getTenantKey();
         $tenantModel = \App\Models\Tenant::query()->with('stoppedBy', 'currentLicense')->find($tenantId);
 
-        $isSupport = $user->isSuperAdmin() || ($user->canAccessPlatformPanel() && session('support_tenant_mode'));
+        $isSupport = $user->isSuperAdmin()
+            || (session('support_tenant_mode') && ($user->canAccessPlatformPanel() || $user->isPlatformStaffMember()));
 
         if (! $isSupport && ! $user->canAccessTenant($tenantId)) {
             abort(403, __('menu.no_cafe_access'));
@@ -51,12 +52,18 @@ class EnsureCafeAccess
         }
 
         if ($user->hasAnyRole(['waiter', 'kitchen'])) {
-            abort_unless($user->tenant_id === $tenantId, 403, __('menu.no_cafe_access'));
+            abort_unless($user->canAccessTenant($tenantId), 403, __('menu.no_cafe_access'));
 
             return $next($request);
         }
 
-        if ($user->isSuperAdmin() || ($user->canAccessPlatformPanel() && session('support_tenant_mode'))) {
+        if ($user->hasRole('cashier')) {
+            abort_unless($user->canAccessTenant($tenantId), 403, __('menu.no_cafe_access'));
+
+            return $next($request);
+        }
+
+        if ($user->isSuperAdmin() || (session('support_tenant_mode') && ($user->canAccessPlatformPanel() || $user->isPlatformStaffMember()))) {
             return $next($request);
         }
 

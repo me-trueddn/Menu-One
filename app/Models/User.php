@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Services\UserPublicIdGenerator;
 use App\Support\PlatformModules;
+use App\Support\TenantIdMatcher;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -140,7 +141,7 @@ class User extends Authenticatable
             return true;
         }
 
-        if ($this->tenant_id === $tenantId) {
+        if (TenantIdMatcher::matches($this->tenant_id, $tenantId)) {
             return true;
         }
 
@@ -160,6 +161,12 @@ class User extends Authenticatable
 
         if ($this->tenant_id) {
             $primary = $this->relationLoaded('tenant') ? $this->tenant : $this->tenant()->first();
+
+            if ($primary === null) {
+                $resolvedId = TenantIdMatcher::resolveFullId($this->tenant_id);
+                $primary = $resolvedId ? Tenant::query()->find($resolvedId) : null;
+            }
+
             if ($primary) {
                 $tenants->put($primary->id, $primary);
             }
@@ -187,7 +194,7 @@ class User extends Authenticatable
     {
         $tenantId = $tenant instanceof Tenant ? $tenant->id : $tenant;
 
-        if ($this->tenant_id === $tenantId) {
+        if (TenantIdMatcher::matches($this->tenant_id, $tenantId)) {
             return true;
         }
 
@@ -246,6 +253,10 @@ class User extends Authenticatable
     public function managesCafePanel(): bool
     {
         if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        if ($this->ownedTenants()->exists() && $this->hasRole('cafe_admin')) {
             return true;
         }
 

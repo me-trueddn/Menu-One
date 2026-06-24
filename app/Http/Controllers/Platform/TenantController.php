@@ -108,7 +108,12 @@ class TenantController extends Controller
 
     public function connect(Tenant $tenant): RedirectResponse
     {
-        abort_unless($this->authUser()->isSuperAdmin() || $this->authUser()->canAccessPlatformPanel(), 403);
+        abort_unless(
+            $this->authUser()->isSuperAdmin()
+            || $this->authUser()->canAccessPlatformPanel()
+            || $this->authUser()->isPlatformStaffMember(),
+            403
+        );
 
         TenantAccess::setActiveTenant($this->authUser(), $tenant->id, support: true);
         app(SupportSessionService::class)->connect($tenant, $this->authUser());
@@ -120,7 +125,12 @@ class TenantController extends Controller
 
     public function disconnectSupport(): RedirectResponse
     {
-        abort_unless($this->authUser()->isSuperAdmin() || $this->authUser()->canAccessPlatformPanel(), 403);
+        abort_unless(
+            $this->authUser()->isSuperAdmin()
+            || $this->authUser()->canAccessPlatformPanel()
+            || $this->authUser()->isPlatformStaffMember(),
+            403
+        );
 
         $tenantId = session('active_tenant_id');
         app(SupportSessionService::class)->disconnect(is_string($tenantId) ? $tenantId : null);

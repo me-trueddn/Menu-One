@@ -17,7 +17,11 @@ class TenantLicenseGate
             return true;
         }
 
-        return $user->canAccessPlatformPanel() && TenantAccess::isInSupportMode($user);
+        if (! TenantAccess::isInSupportMode($user)) {
+            return false;
+        }
+
+        return $user->canAccessPlatformPanel() || $user->isPlatformStaffMember();
     }
 
     public static function linkedTenantForUser(User $user): ?Tenant
