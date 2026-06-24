@@ -33,6 +33,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Schema::defaultStringLength(191);
+
         $activeTheme = config('themes.active', 'adminlte4');
         $themePath = config("themes.themes.{$activeTheme}.path");
 
@@ -106,7 +108,7 @@ class AppServiceProvider extends ServiceProvider
 
     protected function applyBrandingDefaults(): void
     {
-        if (! Schema::hasTable('settings')) {
+        if (! $this->settingsTableExists()) {
             return;
         }
 
@@ -119,7 +121,7 @@ class AppServiceProvider extends ServiceProvider
 
     protected function applyMailSettingsFromDatabase(): void
     {
-        if (! Schema::hasTable('settings')) {
+        if (! $this->settingsTableExists()) {
             return;
         }
 
@@ -132,6 +134,15 @@ class AppServiceProvider extends ServiceProvider
             }
         } catch (\Throwable) {
             //
+        }
+    }
+
+    protected function settingsTableExists(): bool
+    {
+        try {
+            return Schema::hasTable('settings');
+        } catch (\Throwable) {
+            return false;
         }
     }
 }
