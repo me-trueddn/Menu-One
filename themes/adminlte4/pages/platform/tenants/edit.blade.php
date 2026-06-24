@@ -50,6 +50,8 @@
         <div class="card mb-3">
             <div class="card-body">
                 <h6>{{ __('menu.cafe_info') }}</h6>
+                <p class="mb-1 small text-muted">{{ __('menu.tenant_id') }}</p>
+                <p><code class="user-select-all">{{ $tenant->id }}</code></p>
                 <p class="mb-1 small text-muted">{{ __('menu.created_at') }}</p>
                 <p>{{ $tenant->created_at?->format('d.m.Y H:i') ?? '—' }}</p>
                 @if($tenant->currentLicense)

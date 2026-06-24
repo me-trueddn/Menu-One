@@ -38,7 +38,7 @@
             <tbody>
                 @forelse($tenants as $tenant)
                     <tr>
-                        <td><code>{{ $tenant->id }}</code></td>
+                        <td><code class="text-nowrap user-select-all">{{ $tenant->id }}</code></td>
                         <td>
                             <img src="{{ \App\Support\Branding::cafeLogoUrl($tenant) }}" alt="" style="height:24px" class="me-1">
                             {{ $tenant->name }}

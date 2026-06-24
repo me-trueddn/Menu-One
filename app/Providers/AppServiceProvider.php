@@ -6,6 +6,7 @@ use App\Models\DiningTable;
 use App\Models\OrderItem;
 use App\Models\Setting;
 use App\Models\TableCategory;
+use App\Models\Tenant;
 use App\Models\User;
 use App\Services\SupportSessionService;
 use App\Services\UserImpersonationService;
@@ -57,6 +58,9 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('isImpersonating', app(UserImpersonationService::class)->isImpersonating());
             }
         });
+
+        Route::pattern('tenant', '[A-Za-z0-9\-]+');
+        Route::bind('tenant', fn (string $value) => Tenant::query()->whereKey($value)->firstOrFail());
 
         Route::bind('table', fn (string $value) => DiningTable::findOrFail($value));
         Route::bind('table_category', fn (string $value) => TableCategory::findOrFail($value));

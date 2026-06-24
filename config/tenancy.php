@@ -3,16 +3,16 @@
 declare(strict_types=1);
 
 use App\Models\Tenant;
+use App\Support\TenancyTenantIdGenerator;
 use Stancl\Tenancy\Bootstrappers\QueueTenancyBootstrapper;
 use Stancl\Tenancy\Database\Models\Domain;
 use Stancl\Tenancy\TenantDatabaseManagers\MySQLDatabaseManager;
 use Stancl\Tenancy\TenantDatabaseManagers\PostgreSQLDatabaseManager;
 use Stancl\Tenancy\TenantDatabaseManagers\SQLiteDatabaseManager;
-use Stancl\Tenancy\UUIDGenerator;
 
 return [
     'tenant_model' => Tenant::class,
-    'id_generator' => UUIDGenerator::class,
+    'id_generator' => TenancyTenantIdGenerator::class,
 
     'domain_model' => Domain::class,
 
