@@ -172,7 +172,7 @@ view:cache
 
 ## 10) İzinler
 
-**Files** → `storage` ve `bootstrap/cache` → **Permissions** → `775` (gerekirse alt klasörler dahil).
+**Files** → `storage` ve `bootstrap/cache` → **Permissions** → owner+group yazılabilir, diğerleri kapalı (`770` / `ug+rwx,o-rwx`).
 
 ---
 

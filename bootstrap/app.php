@@ -34,7 +34,20 @@ return Application::configure(basePath: dirname(__DIR__))
             'cafe' => \App\Http\Middleware\EnsureCafeAccess::class,
         ]);
 
-        $middleware->trustProxies(at: '*');
+        $trustedProxies = array_values(array_filter(
+            array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', '127.0.0.1,::1'))),
+            fn (string $proxy): bool => $proxy !== '' && $proxy !== '*',
+        ));
+
+        if ($trustedProxies !== []) {
+            $middleware->trustProxies(
+                at: $trustedProxies,
+                headers: Request::HEADER_X_FORWARDED_FOR
+                    | Request::HEADER_X_FORWARDED_HOST
+                    | Request::HEADER_X_FORWARDED_PORT
+                    | Request::HEADER_X_FORWARDED_PROTO,
+            );
+        }
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (TokenMismatchException $e, Request $request) {

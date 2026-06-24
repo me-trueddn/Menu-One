@@ -13,7 +13,8 @@ Git **şunları çekmez** (`.gitignore`):
 
 | Eksik | Çözüm |
 |-------|--------|
-| `vendor/` | Composer: `install --no-dev --optimize-autoloader` |
+| `vendor/` | Composer: `install --no-dev --optimize-autoloader` (Her Git pull sonrası!) |
+| `vendor/spatie` yok | `HasRoles not found` → Composer çalıştırılmamış |
 | `public/build/` | Node: `install --include=dev` + `run build` **veya** PC'den `public/build` zip yükle |
 | `.env` | Elle oluşturun (`deploy/plesk-panel.env`) |
 

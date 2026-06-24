@@ -19,6 +19,13 @@ fi
 
 composer install --no-dev --optimize-autoloader --no-interaction
 
+if ! php -r 'require "vendor/autoload.php"; exit(class_exists(\Spatie\Permission\PermissionServiceProvider::class) && class_exists(\Laravel\Socialite\SocialiteServiceProvider::class) ? 0 : 1);'; then
+    echo "HATA: vendor eksik (spatie/permission veya socialite yok). composer install tekrar çalıştırın."
+    exit 1
+fi
+
+php artisan package:discover --ansi
+
 php artisan config:clear
 
 if ! grep -q '^APP_KEY=base64:' .env 2>/dev/null; then
@@ -41,6 +48,6 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+chmod -R ug+rwx,o-rwx storage bootstrap/cache 2>/dev/null || true
 
 echo "Deploy tamamlandı: https://panel.trueddn.com.tr"

@@ -41,7 +41,7 @@ class PrepareProductionCommand extends Command
             storage_path('logs'),
         ] as $directory) {
             if (! is_dir($directory)) {
-                mkdir($directory, 0775, true);
+                mkdir($directory, 0770, true);
                 $this->line("Created {$directory}");
             }
         }
