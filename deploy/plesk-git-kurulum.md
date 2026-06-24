@@ -20,6 +20,15 @@ Git **şunları çekmez** (`.gitignore`):
 
 `public/build/manifest.json` yoksa site **500** verir.
 
+### Composer çalışmıyorsa — vendor zip (PC'den)
+
+```powershell
+cd C:\Users\faltun\Desktop\Menu-One
+.\deploy\create-plesk-vendor-zip.ps1
+```
+
+Plesk Files: `vendor` klasörünü sil → `Menu-One-vendor.zip` yükle → `vendor/` içine çıkart → Artisan: `package:discover` → `config:cache`
+
 ---
 
 - Plesk **Git** eklentisi yüklü
