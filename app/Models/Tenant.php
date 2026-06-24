@@ -40,6 +40,42 @@ class Tenant extends BaseTenant
         'stopped_at' => 'datetime',
     ];
 
+    /**
+     * Stancl VirtualColumn decodes the data JSON onto the model and can overwrite
+     * real DB columns (e.g. id "619-718" → "619" when data JSON contains "id").
+     */
+    protected function decodeVirtualColumn(): void
+    {
+        if (! $this->dataEncoded) {
+            return;
+        }
+
+        $customColumns = static::getCustomColumns();
+        $encryptedCastables = array_merge(
+            static::$customEncryptedCastables,
+            ['encrypted', 'encrypted:array', 'encrypted:collection', 'encrypted:json', 'encrypted:object'],
+        );
+
+        foreach ($this->getAttribute(static::getDataColumn()) ?? [] as $key => $value) {
+            if (in_array($key, $customColumns, true)) {
+                continue;
+            }
+
+            $attributeHasEncryptedCastable = in_array(data_get($this->getCasts(), $key), $encryptedCastables);
+
+            if ($value && $attributeHasEncryptedCastable && $this->valueEncrypted($value)) {
+                $this->attributes[$key] = $value;
+            } else {
+                $this->setAttribute($key, $value);
+            }
+
+            $this->syncOriginalAttribute($key);
+        }
+
+        $this->setAttribute(static::getDataColumn(), null);
+        $this->dataEncoded = false;
+    }
+
     public function logoUrl(): string
     {
         return Branding::cafeLogoUrl($this);

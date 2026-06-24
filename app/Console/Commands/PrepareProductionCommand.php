@@ -62,6 +62,13 @@ class PrepareProductionCommand extends Command
             $this->line($migrateOutput);
         }
 
+        Artisan::call('tenants:repair-data');
+        $repairOutput = trim(Artisan::output());
+
+        if ($repairOutput !== '') {
+            $this->line($repairOutput);
+        }
+
         Artisan::call('cache:clear');
         $this->info('Application cache cleared.');
 
