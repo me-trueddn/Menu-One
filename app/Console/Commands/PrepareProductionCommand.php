@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Setting;
+use App\Support\PlatformModules;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -60,6 +61,11 @@ class PrepareProductionCommand extends Command
 
         if ($migrateOutput !== '') {
             $this->line($migrateOutput);
+        }
+
+        if (Schema::hasTable('permissions')) {
+            PlatformModules::syncPermissions();
+            $this->info('Platform module permissions synced.');
         }
 
         Artisan::call('tenants:repair-data');

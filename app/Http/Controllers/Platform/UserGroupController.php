@@ -50,9 +50,7 @@ class UserGroupController extends Controller
             'is_system' => false,
         ]);
 
-        $group->syncPermissions(
-            PlatformModules::permissionsFromRequest($validated['permissions'] ?? [])
-        );
+        PlatformModules::syncRolePermissions($group, $validated['permissions'] ?? []);
 
         return redirect()
             ->route('platform.user-groups.index')
@@ -87,9 +85,7 @@ class UserGroupController extends Controller
             'description' => $validated['description'] ?? null,
         ]);
 
-        $group->syncPermissions(
-            PlatformModules::permissionsFromRequest($validated['permissions'] ?? [])
-        );
+        PlatformModules::syncRolePermissions($group, $validated['permissions'] ?? []);
 
         return redirect()
             ->route('platform.user-groups.index')

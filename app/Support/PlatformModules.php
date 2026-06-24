@@ -153,6 +153,13 @@ class PlatformModules
         return $granted;
     }
 
+    public static function syncRolePermissions(\Spatie\Permission\Models\Role $role, array $input): void
+    {
+        static::syncPermissions();
+
+        $role->syncPermissions(static::permissionsFromRequest($input));
+    }
+
     /** @return array<string, array{view: bool, edit: bool}> */
     public static function permissionsForRole(\Spatie\Permission\Models\Role $role): array
     {
