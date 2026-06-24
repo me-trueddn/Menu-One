@@ -12,6 +12,7 @@ use App\Services\SocialAuthService;
 use App\Services\PasswordLifecycleService;
 use App\Services\TwoFactorNotificationService;
 use App\Services\TwoFactorService;
+use App\Services\UserCafeService;
 use App\Support\MailExceptionFormatter;
 use App\Support\SecurityPolicy;
 use Illuminate\Http\RedirectResponse;
@@ -217,13 +218,13 @@ class CustomerController extends Controller
             'tenant_id' => ['required', 'string', 'exists:tenants,id'],
         ]);
 
-        if ($customer->assignedTenants()->whereKey($validated['tenant_id'])->exists()
-            || $customer->tenant_id === $validated['tenant_id']
-            || $customer->ownedTenants()->whereKey($validated['tenant_id'])->exists()) {
+        if ($customer->isLinkedToTenant($validated['tenant_id'])) {
             return back()->with('error', __('menu.tenant_already_assigned'));
         }
 
-        $customer->assignedTenants()->attach($validated['tenant_id']);
+        $tenant = Tenant::query()->findOrFail($validated['tenant_id']);
+
+        app(UserCafeService::class)->linkAsCafeOwner($customer, $tenant);
 
         return back()->with('success', __('menu.tenant_assigned'));
     }

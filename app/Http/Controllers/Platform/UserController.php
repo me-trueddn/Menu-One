@@ -282,10 +282,9 @@ class UserController extends Controller
         abort_unless($user->isPlatformStaffMember(), 404);
         SuperAdminGuard::abortIfProtected($user);
 
-        $user->assignedTenants()->detach($tenant->id);
+        abort_unless($user->isLinkedToTenant($tenant), 404);
 
-        $user->refresh();
-        $user->syncCafeAdminRole();
+        $user->unlinkTenant($tenant);
 
         return back()->with('success', __('menu.tenant_removed'));
     }

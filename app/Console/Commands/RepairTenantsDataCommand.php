@@ -62,6 +62,7 @@ class RepairTenantsDataCommand extends Command
 
         $referenceRepairs = $this->repairTruncatedTenantReferences();
         $referenceRepairs += $this->repairPlatformStaffTenantIds();
+        $referenceRepairs += $this->repairCafeAdminRoles();
 
         if ($referenceRepairs > 0) {
             $this->info("Repaired {$referenceRepairs} truncated tenant_id reference(s).");
@@ -157,6 +158,31 @@ class RepairTenantsDataCommand extends Command
                 $user->update(['tenant_id' => null]);
                 $this->line("Cleared tenant_id on platform staff #{$user->id} ({$user->email})");
                 $fixed++;
+            });
+
+        return $fixed;
+    }
+
+    private function repairCafeAdminRoles(): int
+    {
+        $fixed = 0;
+
+        User::query()
+            ->role('user')
+            ->where(function ($query) {
+                $query
+                    ->whereNotNull('tenant_id')
+                    ->orWhereHas('ownedTenants')
+                    ->orWhereHas('assignedTenants');
+            })
+            ->each(function (User $user) use (&$fixed) {
+                $before = $user->hasRole('cafe_admin');
+                $user->syncCafeAdminRole();
+
+                if (! $before && $user->fresh()->hasRole('cafe_admin')) {
+                    $this->line("Assigned cafe_admin to user #{$user->id} ({$user->email})");
+                    $fixed++;
+                }
             });
 
         return $fixed;

@@ -239,12 +239,7 @@ class ProfileController extends Controller
 
         $this->licenses->assignDefault($tenant);
 
-        $user->update(['tenant_id' => $tenant->id, 'unlicensed_cafe_deleted_at' => null]);
-        $user->assignedTenants()->syncWithoutDetaching([$tenant->id]);
-
-        if (! $user->hasRole('cafe_admin')) {
-            $user->assignRole('cafe_admin');
-        }
+        $this->cafes->linkAsCafeOwner($user, $tenant);
 
         TenantAccess::setActiveTenant($user, $tenant->id);
 

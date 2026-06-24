@@ -77,4 +77,25 @@ class UserCafeService
             $user->update(['unlicensed_cafe_deleted_at' => now()]);
         }
     }
+
+    public function linkAsCafeOwner(User $user, Tenant $tenant, bool $setPrimaryTenant = true): void
+    {
+        DB::transaction(function () use ($user, $tenant, $setPrimaryTenant) {
+            if ($tenant->owner_user_id !== null && $tenant->owner_user_id !== $user->id) {
+                User::query()->find($tenant->owner_user_id)?->unlinkTenant($tenant);
+            }
+
+            $tenant->update(['owner_user_id' => $user->id]);
+
+            if ($setPrimaryTenant && $user->tenant_id === null) {
+                $user->update([
+                    'tenant_id' => $tenant->id,
+                    'unlicensed_cafe_deleted_at' => null,
+                ]);
+            }
+
+            $user->assignedTenants()->syncWithoutDetaching([$tenant->id]);
+            $user->syncCafeAdminRole();
+        });
+    }
 }

@@ -226,15 +226,35 @@ class User extends Authenticatable
     {
         $this->refresh();
 
-        $hasCafeLinks = $this->tenant_id !== null
-            || $this->assignedTenants()->exists()
-            || $this->ownedTenants()->exists();
+        if ($this->qualifiesForCafeAdminRole()) {
+            if (! $this->hasRole('cafe_admin')) {
+                $this->assignRole('cafe_admin');
+            }
 
-        if ($hasCafeLinks || ! $this->hasRole('cafe_admin')) {
             return;
         }
 
-        $this->removeRole('cafe_admin');
+        if ($this->hasRole('cafe_admin') && ! $this->hasAnyRole(['waiter', 'cashier', 'kitchen'])) {
+            $this->removeRole('cafe_admin');
+        }
+    }
+
+    public function qualifiesForCafeAdminRole(): bool
+    {
+        if ($this->isSuperAdmin() || $this->isPlatformStaffMember()) {
+            return false;
+        }
+
+        if ($this->hasAnyRole(['waiter', 'cashier', 'kitchen']) && ! $this->isCustomer()) {
+            return false;
+        }
+
+        if ($this->ownedTenants()->exists()) {
+            return true;
+        }
+
+        return $this->isCustomer()
+            && ($this->tenant_id !== null || $this->assignedTenants()->exists());
     }
 
     public function showsCafeSidebar(): bool
