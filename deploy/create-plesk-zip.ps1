@@ -1,9 +1,14 @@
-# Menu-One Plesk upload zip (vendor/node_modules/.env hariç)
+# Menu-One Plesk upload zip (vendor/node_modules/.env hariç, public/build DAHIL)
 $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $zipName = "Menu-One-plesk.zip"
 $zipPath = Join-Path $projectRoot $zipName
+
+if (-not (Test-Path (Join-Path $projectRoot "public\build\manifest.json"))) {
+    Write-Host "public/build yok. Once: npm ci && npm run build"
+    exit 1
+}
 
 if (Test-Path $zipPath) {
     Remove-Item $zipPath -Force
@@ -13,7 +18,6 @@ $excludeDirs = @(
     "vendor",
     "node_modules",
     ".git",
-    "public\build",
     "public\hot",
     "storage\logs",
     "storage\framework\cache",
@@ -39,7 +43,7 @@ try {
 
         $dest = Join-Path $temp $name
         if ($_.PSIsContainer) {
-            robocopy $_.FullName $dest /E /XD vendor node_modules .git public\build public\hot /XF .env .env.backup .env.production /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+            robocopy $_.FullName $dest /E /XD vendor node_modules .git public\hot /XF .env .env.backup .env.production /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
             if (-not (Test-Path $dest)) {
                 Copy-Item -Path $_.FullName -Destination $dest -Recurse -Force
             }

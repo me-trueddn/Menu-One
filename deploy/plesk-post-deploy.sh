@@ -30,7 +30,7 @@ php artisan db:seed --force
 php artisan storage:link --force 2>/dev/null || true
 
 if command -v npm >/dev/null 2>&1; then
-    npm ci
+    npm install --no-audit --no-fund
     npm run build
 else
     echo "UYARI: npm bulunamadı. Plesk Node.js eklentisini kurun veya public/build klasörünü yükleyin."
