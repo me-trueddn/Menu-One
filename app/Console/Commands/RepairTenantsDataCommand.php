@@ -52,9 +52,29 @@ class RepairTenantsDataCommand extends Command
             $this->info('Seeded default license types.');
         }
 
-        $this->info($repaired > 0
-            ? "Repaired {$repaired} tenant row(s)."
-            : 'No tenant data JSON needed repair.');
+        if ($repaired > 0) {
+            $this->info("Repaired {$repaired} tenant row(s).");
+        } else {
+            $this->info('No tenant data JSON needed repair.');
+        }
+
+        $mismatches = 0;
+
+        foreach (DB::table('tenants')->pluck('id') as $dbId) {
+            $modelId = Tenant::query()->find($dbId)?->id;
+
+            if ($modelId !== $dbId) {
+                $mismatches++;
+                $this->warn("ID mismatch: DB={$dbId}, model={$modelId}");
+            }
+        }
+
+        if ($mismatches > 0) {
+            $this->newLine();
+            $this->error('Deploy the latest app code (Tenant VirtualColumn fix, v2.0.60+) then run tenants:repair-data again.');
+
+            return self::FAILURE;
+        }
 
         return self::SUCCESS;
     }
