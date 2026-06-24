@@ -40,6 +40,16 @@ class Tenant extends BaseTenant
         'stopped_at' => 'datetime',
     ];
 
+    public function getIncrementing(): bool
+    {
+        return false;
+    }
+
+    public function getKeyType(): string
+    {
+        return 'string';
+    }
+
     /**
      * Stancl VirtualColumn decodes the data JSON onto the model and can overwrite
      * real DB columns (e.g. id "619-718" → "619" when data JSON contains "id").

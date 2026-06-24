@@ -34,4 +34,27 @@ class TenantVirtualColumnTest extends TestCase
         $this->assertSame('Seyyit Cafe', $tenant->name);
         $this->assertSame('seyyit-cafe', $tenant->slug);
     }
+
+    public function test_hyphenated_id_is_not_cast_to_integer(): void
+    {
+        DB::table('tenants')->insert([
+            'id' => '746-518',
+            'name' => 'Köse',
+            'slug' => 'kose',
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+            'data' => json_encode([
+                'created_at' => '2026-06-23 13:48:45',
+                'updated_at' => '2026-06-23 13:48:45',
+            ]),
+        ]);
+
+        $tenant = Tenant::query()->find('746-518');
+
+        $this->assertNotNull($tenant);
+        $this->assertSame('746-518', $tenant->id);
+        $this->assertFalse($tenant->getIncrementing());
+        $this->assertSame('string', $tenant->getKeyType());
+    }
 }

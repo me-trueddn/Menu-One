@@ -7,6 +7,7 @@ namespace App\Providers;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Stancl\Tenancy\Contracts\UniqueIdentifierGenerator;
 use Stancl\Tenancy\Events;
 use Stancl\Tenancy\Listeners;
 use Stancl\Tenancy\Middleware;
@@ -70,7 +71,11 @@ class TenancyServiceProvider extends ServiceProvider
 
     public function register(): void
     {
-        //
+        $idGenerator = config('tenancy.id_generator');
+
+        if (is_string($idGenerator) && $idGenerator !== '') {
+            $this->app->bind(UniqueIdentifierGenerator::class, $idGenerator);
+        }
     }
 
     public function boot(): void
