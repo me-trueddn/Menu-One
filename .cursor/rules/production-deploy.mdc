@@ -1,0 +1,56 @@
+---
+description: Her kod değişikliği sonunda canlı (Plesk) deploy adımlarını yaz
+alwaysApply: true
+---
+
+# Canlıya Alma (Plesk) — Zorunlu Özet
+
+Her kod değişikliği oturumu bittiğinde kullanıcıya **mutlaka** aşağıdaki başlıkla kısa bir bölüm yaz:
+
+## Canlıya alma
+
+### 1) Bilgisayar
+- `git commit` + `git push`
+- `composer.lock` / `package.json` değiştiyse: `composer install --no-dev` + `npm run build` + `vendor` / `public/build` commit
+
+### 2) Plesk
+- **Menu-One.git** → Şimdi çek → Şimdi dağıt
+- Deployment script: `deploy/plesk-post-deploy-sql-import.sh` (SQL import modu)
+
+### 3) Artisan (Plesk kutusuna `php artisan` YAZMA — sadece komut adı)
+
+**Her deploy (minimum):**
+```
+optimize:clear
+deploy:prepare-production
+config:cache
+route:cache
+view:cache
+version:show
+tenants:list
+```
+
+**Değişikliğe göre ek komutlar (yapıldıysa yaz):**
+
+| Değişiklik | Ek adım |
+|------------|---------|
+| Yeni migration | `deploy:prepare-production` içinde `migrate --force` çalışır; elle: `migrate --force` |
+| `.env` / config değişti | `config:clear` → `config:cache` |
+| Route eklendi/değişti | `route:cache` |
+| Blade/view değişti | `view:clear` → `view:cache` |
+| `composer.lock` değişti | Yerelde vendor commit; Plesk'te `composer install --no-dev` (script yedek) |
+| `package.json` / frontend | `npm ci` → `npm run build` |
+| Storage symlink | `storage:link --force` |
+| Tenant veri onarımı | `tenants:repair-data` (`deploy:prepare-production` zaten çalıştırır) |
+| OPcache eski kod | Plesk PHP **Restart** |
+
+### 4) Uyarılar (değişiklik varsa belirt)
+- `deploy:prepare-production` → session/cache temizler → **yeniden giriş**
+- Mail/captcha: `.env` `APP_KEY` dev ile aynı değilse panelden ayarları yeniden kaydet
+- Footer sürümü (`version:show`) deploy doğrulaması için kullan
+
+### Kurallar
+- Sadece PHP/Blade değişikliği → genelde Git pull + deploy script yeterli
+- Migration varsa → **mutlaka** `migrate` / `deploy:prepare-production` vurgula
+- Hiç deploy adımı gerekmiyorsa (sadece soru/inceleme) bu bölümü yazma
+- Komutları kullanıcının Plesk ortamına göre yaz (`panel.trueddn.com.tr`)

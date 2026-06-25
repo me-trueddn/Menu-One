@@ -68,6 +68,24 @@ Plesk       → Menu-One.git pull + deploy
 
 ---
 
+## Her değişiklikte Artisan (Plesk — `php artisan` yazmayın)
+
+| Ne değişti? | Plesk Artisan |
+|-------------|---------------|
+| **Her deploy** | `optimize:clear` → `deploy:prepare-production` → `config:cache` → `route:cache` → `view:cache` → `version:show` → `tenants:list` |
+| Yeni migration | `deploy:prepare-production` (içinde `migrate --force`) |
+| Sadece `.env` | `config:clear` → `config:cache` |
+| Sadece route | `route:cache` |
+| Sadece Blade | `view:clear` → `view:cache` |
+| Frontend (Vite) | Node: `ci` → `run build` |
+| `composer.lock` | PC'de `composer install --no-dev` + vendor commit; gerekirse Plesk Composer: `install --no-dev --optimize-autoloader` |
+
+**Not:** `deploy:prepare-production` session/cache temizler → kullanıcılar yeniden giriş yapar.
+
+Deployment script (`plesk-post-deploy-sql-import.sh`) yukarıdakilerin çoğunu otomatik yapar; elle sadece script yoksa veya hata sonrası kontrol için çalıştırın.
+
+---
+
 ## Prod / local farkı (cafe session, cafe oluşturma)
 
 **Semptom:** SQL'de tenant `619-718` ama panel `619` görüyor; cafe bağlanamıyor / oluşturulamıyor.
