@@ -11,6 +11,7 @@
                     'formAction' => route('admin.products.store'),
                     'formMethod' => 'POST',
                     'categories' => $categories,
+                    'enabledIntegrationProviders' => $enabledIntegrationProviders ?? [],
                     'submitLabel' => __('menu.save'),
                     'showCancel' => true,
                 ])

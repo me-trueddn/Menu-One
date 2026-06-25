@@ -12,7 +12,7 @@ class KitchenService
     public function pendingItems(): Collection
     {
         return OrderItem::query()
-            ->with(['product', 'order.cafeTable'])
+            ->with(['product', 'order.cafeTable', 'order'])
             ->whereIn('status', [
                 OrderItemStatus::Pending,
                 OrderItemStatus::Preparing,
@@ -27,7 +27,7 @@ class KitchenService
     public function readyItems(): Collection
     {
         return OrderItem::query()
-            ->with(['product', 'order.cafeTable'])
+            ->with(['product', 'order.cafeTable', 'order'])
             ->where('status', OrderItemStatus::Ready)
             ->whereHas('order', fn ($q) => $q
                 ->whereIn('status', OrderStatus::payableValues())
@@ -80,6 +80,7 @@ class KitchenService
                 return [
                     'table_id' => (int) $tableId,
                     'table' => $table?->name ?? '—',
+                    'integration_provider' => $tableItems->first()->order->integration_provider?->label(),
                     'since' => $tableItems->min('created_at'),
                     'items' => $tableItems->sortBy('created_at')->values(),
                 ];

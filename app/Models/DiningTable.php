@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\IntegrationProvider;
 use App\Enums\OrderStatus;
 use App\Enums\ReservationStatus;
 use App\Enums\TableStatus;
@@ -23,13 +24,22 @@ class DiningTable extends Model
         'name',
         'capacity',
         'status',
+        'is_virtual',
+        'integration_provider',
     ];
 
     protected function casts(): array
     {
         return [
             'status' => TableStatus::class,
+            'is_virtual' => 'boolean',
+            'integration_provider' => IntegrationProvider::class,
         ];
+    }
+
+    public function isVirtual(): bool
+    {
+        return (bool) $this->is_virtual;
     }
 
     public function tableCategory(): BelongsTo

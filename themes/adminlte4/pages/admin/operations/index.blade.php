@@ -25,17 +25,24 @@
             <div class="card-header"><h6 class="mb-0">{{ __('menu.open_orders') }} ({{ $openOrders->count() }})</h6></div>
             <div class="card-body table-responsive p-0">
                 <table class="table mb-0">
-                    <thead><tr><th>{{ __('menu.tables') }}</th><th>{{ __('menu.status') }}</th><th>{{ __('menu.total') }}</th><th>{{ __('menu.staff') }}</th></tr></thead>
+                    <thead><tr><th>{{ __('menu.tables') }}</th><th>{{ __('menu.source') }}</th><th>{{ __('menu.status') }}</th><th>{{ __('menu.total') }}</th><th>{{ __('menu.staff') }}</th></tr></thead>
                     <tbody>
                         @forelse($openOrders as $order)
                             <tr>
                                 <td>{{ $order->cafeTable?->name ?? '—' }}</td>
+                                <td>
+                                    @if($order->isDelivery() && $order->integration_provider)
+                                        <span class="badge {{ $order->integration_provider->badgeClass() }}">{{ $order->integration_provider->label() }}</span>
+                                    @else
+                                        <span class="text-muted">{{ __('menu.order_type_dine_in') }}</span>
+                                    @endif
+                                </td>
                                 <td>{{ $order->status->label() ?? $order->status }}</td>
                                 <td>{{ number_format((float) $order->total, 2) }}</td>
                                 <td>{{ $order->user?->name ?? '—' }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="4" class="text-center text-muted py-3">{{ __('menu.no_open_orders') }}</td></tr>
+                            <tr><td colspan="5" class="text-center text-muted py-3">{{ __('menu.no_open_orders') }}</td></tr>
                         @endforelse
                     </tbody>
                 </table>

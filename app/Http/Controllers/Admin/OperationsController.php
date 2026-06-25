@@ -15,7 +15,7 @@ class OperationsController extends Controller
 
     public function index(): View
     {
-        $tables = DiningTable::query()->orderBy('name')->get();
+        $tables = DiningTable::query()->where('is_virtual', false)->orderBy('name')->get();
         $openOrders = Order::query()
             ->with(['cafeTable', 'items.product', 'user'])
             ->whereIn('status', OrderStatus::payableValues())

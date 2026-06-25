@@ -8,6 +8,9 @@
         <div class="card h-100 border-{{ $borderClass }} {{ $hasReady ? 'bg-warning-subtle' : '' }}" data-table-card>
             <div class="card-body text-center">
                 <h4 class="card-title">{{ $table->name }}</h4>
+                @if($table->isVirtual() && $table->integration_provider)
+                    <p class="mb-1"><span class="badge {{ $table->integration_provider->badgeClass() }}">{{ $table->integration_provider->label() }}</span></p>
+                @endif
                 <p class="mb-1"><span class="badge {{ $displayStatus->badgeClass() }}">{{ $displayStatus->label() }}</span></p>
                 <small class="text-muted">{{ $table->capacity }} {{ __('menu.seats') }}</small>
                 <div data-ready-banner class="{{ $hasReady ? '' : 'd-none' }} mt-2">

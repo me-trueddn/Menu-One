@@ -26,6 +26,7 @@ class KitchenController extends Controller
         $tables = $this->kitchen->pendingGroupedByTable()->map(fn (array $group) => [
             'table_id' => $group['table_id'],
             'table' => $group['table'],
+            'integration_provider' => $group['integration_provider'] ?? null,
             'since' => $group['since']->format('H:i'),
             'items' => $group['items']->map(fn (OrderItem $item) => $this->serializeItem($item))->values(),
         ]);

@@ -14,6 +14,7 @@
             'formAction' => route('admin.products.update', $product),
             'formMethod' => 'PUT',
             'categories' => $categories,
+            'enabledIntegrationProviders' => $enabledIntegrationProviders ?? [],
             'submitLabel' => __('menu.update'),
             'showCancel' => false,
         ])

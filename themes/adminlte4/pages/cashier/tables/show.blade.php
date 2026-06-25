@@ -102,6 +102,18 @@
                         <div class="form-text">{{ __('menu.split_count_hint') }}</div>
                         @error('split_count')<div class="text-danger small">{{ $message }}</div>@enderror
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('menu.okc_device') }}</label>
+                        <select name="okc_device_id" class="form-select">
+                            <option value="">{{ __('menu.okc_skip_device') }}</option>
+                            @foreach($okcDevices as $device)
+                                <option value="{{ $device->id }}" @selected((int) old('okc_device_id') === $device->id)>
+                                    {{ $device->name }}{{ $device->device_type ? ' ('.$device->device_type->label().')' : '' }}{{ $device->model ? ' - '.$device->model : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <div class="form-text">{{ __('menu.okc_payment_send_hint') }}</div>
+                    </div>
                     <div class="alert alert-light border mb-3">
                         <div class="d-flex justify-content-between">
                             <span>{{ __('menu.subtotal') }}</span>

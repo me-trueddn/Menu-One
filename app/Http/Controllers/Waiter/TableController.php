@@ -17,6 +17,7 @@ class TableController extends Controller
     {
         $categories = TableCategory::query()
             ->with(['tables' => fn ($query) => $query
+                ->where('is_virtual', false)
                 ->with(['upcomingReservations', 'payableOrder'])
                 ->orderBy('name')])
             ->orderBy('sort_order')
@@ -26,12 +27,19 @@ class TableController extends Controller
         $uncategorizedTables = DiningTable::query()
             ->with(['upcomingReservations', 'payableOrder'])
             ->whereNull('table_category_id')
+            ->where('is_virtual', false)
             ->orderBy('name')
+            ->get();
+
+        $virtualTables = DiningTable::query()
+            ->with(['payableOrder'])
+            ->where('is_virtual', true)
+            ->orderByDesc('updated_at')
             ->get();
 
         $readyCountsByTable = $this->kitchen->readyCountsByTableId();
 
-        return view('theme::pages.waiter.tables.index', compact('categories', 'uncategorizedTables', 'readyCountsByTable'));
+        return view('theme::pages.waiter.tables.index', compact('categories', 'uncategorizedTables', 'virtualTables', 'readyCountsByTable'));
     }
 
     public function show(DiningTable $table): View

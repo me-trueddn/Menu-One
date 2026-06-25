@@ -44,7 +44,10 @@ function renderTableCard(group) {
         <div class="col-md-6 col-xl-4">
             <div class="card border-warning h-100 shadow-sm">
                 <div class="card-header bg-warning-subtle d-flex justify-content-between align-items-center">
-                    <strong class="fs-5">${group.table}</strong>
+                    <div>
+                        <strong class="fs-5">${group.table}</strong>
+                        ${group.integration_provider ? `<span class="badge text-bg-primary ms-1">${group.integration_provider}</span>` : ''}
+                    </div>
                     <span class="badge text-bg-warning">${group.items.length}</span>
                 </div>
                 <div class="card-body p-0">

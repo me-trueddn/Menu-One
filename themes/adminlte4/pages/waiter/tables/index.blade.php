@@ -32,6 +32,15 @@
     @endif
 @endif
 
+@if(isset($virtualTables) && $virtualTables->isNotEmpty())
+    <h5 class="mb-3 mt-4">{{ __('menu.delivery_virtual_tables') }}</h5>
+    <div class="row mb-4">
+        @foreach($virtualTables as $table)
+            @include('theme::partials.table-card', ['table' => $table, 'readyCountsByTable' => $readyCountsByTable])
+        @endforeach
+    </div>
+@endif
+
 <div id="ready-alert" class="alert alert-warning d-none"></div>
 @endsection
 @push('scripts')

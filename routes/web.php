@@ -1,9 +1,13 @@
 <?php
 
+use App\Http\Controllers\Admin\DeliveryOrderController;
+use App\Http\Controllers\Admin\IntegrationController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\DiningTableController as AdminDiningTableController;
+use App\Http\Controllers\Admin\IntegrationBillingController;
 use App\Http\Controllers\Admin\OperationsController;
+use App\Http\Controllers\Admin\OkcDeviceController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Admin\StaffController as AdminStaffController;
@@ -106,6 +110,28 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('products', AdminProductController::class)->except(['show']);
         Route::resource('staff', AdminStaffController::class)->except(['show']);
         Route::get('/reports', [AdminReportController::class, 'index'])->name('reports.index');
+
+        Route::get('/integrations', [IntegrationController::class, 'index'])->name('integrations.index');
+        Route::get('/integrations/billing/defaults', [IntegrationBillingController::class, 'edit'])->name('integrations.billing.edit');
+        Route::put('/integrations/billing/defaults', [IntegrationBillingController::class, 'update'])->name('integrations.billing.update');
+        Route::get('/integrations/{provider}/mappings', [IntegrationController::class, 'mappings'])->name('integrations.mappings');
+        Route::post('/integrations/{provider}/mappings', [IntegrationController::class, 'storeMapping'])->name('integrations.mappings.store');
+        Route::delete('/integrations/{provider}/mappings/{mapping}', [IntegrationController::class, 'destroyMapping'])->name('integrations.mappings.destroy');
+        Route::get('/integrations/{provider}', [IntegrationController::class, 'edit'])->name('integrations.edit');
+        Route::put('/integrations/{provider}', [IntegrationController::class, 'update'])->name('integrations.update');
+
+        Route::get('/delivery-orders', [DeliveryOrderController::class, 'index'])->name('delivery-orders.index');
+        Route::get('/delivery-orders/poll', [DeliveryOrderController::class, 'poll'])->name('delivery-orders.poll');
+        Route::post('/delivery-orders/{order}/accept', [DeliveryOrderController::class, 'accept'])->name('delivery-orders.accept');
+        Route::post('/delivery-orders/{order}/preparing', [DeliveryOrderController::class, 'preparing'])->name('delivery-orders.preparing');
+        Route::post('/delivery-orders/{order}/ready-for-courier', [DeliveryOrderController::class, 'readyForCourier'])->name('delivery-orders.ready-for-courier');
+        Route::post('/delivery-orders/{order}/hand-to-courier', [DeliveryOrderController::class, 'handToCourier'])->name('delivery-orders.hand-to-courier');
+        Route::post('/delivery-orders/{order}/reject', [DeliveryOrderController::class, 'reject'])->name('delivery-orders.reject');
+
+        Route::get('/okc-devices', [OkcDeviceController::class, 'index'])->name('okc-devices.index');
+        Route::post('/okc-devices', [OkcDeviceController::class, 'store'])->name('okc-devices.store');
+        Route::put('/okc-devices/{okcDevice}', [OkcDeviceController::class, 'update'])->name('okc-devices.update');
+        Route::delete('/okc-devices/{okcDevice}', [OkcDeviceController::class, 'destroy'])->name('okc-devices.destroy');
     });
 
     Route::middleware(['tenant', 'cafe', 'role:waiter,cashier,cafe_admin'])->prefix('reservations')->name('reservations.')->group(function () {

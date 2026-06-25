@@ -2,6 +2,9 @@
     $product ??= null;
     $isEdit = $product !== null;
     $extras = old('extras', $product?->extras ?? []);
+    $enabledIntegrationProviders = $enabledIntegrationProviders ?? [];
+    $selectedSyncProviders = old('extras.integration_sync_providers', $extras['integration_sync_providers'] ?? []);
+    $selectedSyncProviders = is_array($selectedSyncProviders) ? array_map('strval', $selectedSyncProviders) : [];
     $imageUrl = $product?->image_path ? \App\Support\ImageStorage::url($product->image_path, \App\Support\MediaLimits::variantForContext(\App\Support\MediaLimits::CONTEXT_PRODUCT)) : null;
 @endphp
 
@@ -283,6 +286,44 @@
                         </div>
                     </div>
                 </div>
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center border rounded px-3 py-2">
+                        <span class="mo-field-label mb-0">{{ __('menu.integration_product_sync_enabled') }}</span>
+                        <div class="form-check form-switch mb-0">
+                            <input type="checkbox" name="extras[integration_sync_enabled]" value="1" class="form-check-input" id="productIntegrationSync"
+                                   @checked(old('extras.integration_sync_enabled', $extras['integration_sync_enabled'] ?? false))>
+                        </div>
+                    </div>
+                    <div class="form-text">{{ __('menu.integration_product_sync_enabled_hint') }}</div>
+                </div>
+                @if(count($enabledIntegrationProviders) > 0)
+                    <div class="col-12">
+                        <div class="mo-field-label">{{ __('menu.integration_sync_targets') }}</div>
+                        <div class="border rounded p-3">
+                            <div class="row g-2">
+                                @foreach($enabledIntegrationProviders as $provider)
+                                    @php($providerEnum = \App\Enums\IntegrationProvider::tryFromSlug($provider))
+                                    @continue(!$providerEnum)
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox"
+                                                   id="integration_sync_provider_{{ $providerEnum->slug() }}"
+                                                   name="extras[integration_sync_providers][]"
+                                                   value="{{ $providerEnum->slug() }}"
+                                                   @checked(in_array($providerEnum->slug(), $selectedSyncProviders, true))>
+                                            <label class="form-check-label" for="integration_sync_provider_{{ $providerEnum->slug() }}">
+                                                {{ $providerEnum->label() }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        <div class="form-text">{{ __('menu.integration_sync_targets_hint') }}</div>
+                        @error('extras.integration_sync_providers')<div class="text-danger small">{{ $message }}</div>@enderror
+                        @error('extras.integration_sync_providers.*')<div class="text-danger small">{{ $message }}</div>@enderror
+                    </div>
+                @endif
             </div>
         </div>
 

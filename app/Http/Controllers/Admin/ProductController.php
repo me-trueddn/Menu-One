@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\TenantIntegration;
 use App\Models\Category;
 use App\Models\Product;
+use App\Services\IntegrationCatalogService;
 use App\Support\CloudflarePolicy;
 use App\Support\ImageStorage;
 use App\Support\MediaLimits;
@@ -12,10 +14,13 @@ use App\Support\MediaStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\In;
 use Illuminate\View\View;
 
 class ProductController extends Controller
 {
+    public function __construct(private IntegrationCatalogService $integrationCatalog) {}
+
     public function index(Request $request): View
     {
         $search = trim((string) $request->query('q', ''));
@@ -34,8 +39,12 @@ class ProductController extends Controller
 
         $products = $query->paginate(20)->withQueryString();
         $categories = Category::orderBy('sort_order')->get();
+        $enabledIntegrationProviders = TenantIntegration::query()
+            ->where('is_enabled', true)
+            ->pluck('provider')
+            ->all();
 
-        return view('theme::pages.admin.products.index', compact('products', 'categories', 'search'));
+        return view('theme::pages.admin.products.index', compact('products', 'categories', 'search', 'enabledIntegrationProviders'));
     }
 
     public function create(): RedirectResponse
@@ -53,6 +62,7 @@ class ProductController extends Controller
 
         $this->storeImage($request, $product);
         $this->storeVideo($request, $product);
+        $this->syncIfRequested($product);
 
         return redirect()
             ->route('admin.products.index')
@@ -62,8 +72,12 @@ class ProductController extends Controller
     public function edit(Product $product): View
     {
         $categories = Category::orderBy('sort_order')->get();
+        $enabledIntegrationProviders = TenantIntegration::query()
+            ->where('is_enabled', true)
+            ->pluck('provider')
+            ->all();
 
-        return view('theme::pages.admin.products.edit', compact('product', 'categories'));
+        return view('theme::pages.admin.products.edit', compact('product', 'categories', 'enabledIntegrationProviders'));
     }
 
     public function update(Request $request, Product $product): RedirectResponse
@@ -74,6 +88,7 @@ class ProductController extends Controller
 
         $this->storeImage($request, $product);
         $this->storeVideo($request, $product);
+        $this->syncIfRequested($product);
 
         return redirect()
             ->route('admin.products.index')
@@ -101,6 +116,10 @@ class ProductController extends Controller
     protected function validateProduct(Request $request, ?Product $product = null): array
     {
         $tenantId = $this->tenantId();
+        $allowedProviders = TenantIntegration::query()
+            ->where('is_enabled', true)
+            ->pluck('provider')
+            ->all();
 
         return $request->validate([
             'category_id' => ['required', 'exists:categories,id'],
@@ -135,6 +154,9 @@ class ProductController extends Controller
             'extras.extra_images' => ['nullable', 'string', 'max:1000'],
             'extras.is_splittable' => ['boolean'],
             'extras.options_note' => ['nullable', 'string', 'max:2000'],
+            'extras.integration_sync_enabled' => ['nullable', 'boolean'],
+            'extras.integration_sync_providers' => ['nullable', 'array'],
+            'extras.integration_sync_providers.*' => [new In($allowedProviders)],
         ]);
     }
 
@@ -173,7 +195,21 @@ class ProductController extends Controller
             'extra_images' => $extras['extra_images'] ?? null,
             'is_splittable' => $request->boolean('extras.is_splittable'),
             'options_note' => $extras['options_note'] ?? null,
+            'integration_sync_enabled' => $request->boolean('extras.integration_sync_enabled'),
+            'integration_sync_providers' => array_values(array_map('strval', $extras['integration_sync_providers'] ?? [])),
         ];
+    }
+
+    protected function syncIfRequested(Product $product): void
+    {
+        if (! $product->extra('integration_sync_enabled', false)) {
+            return;
+        }
+
+        $providers = $product->extra('integration_sync_providers', []);
+        $providers = is_array($providers) ? array_values(array_map('strval', $providers)) : [];
+
+        $this->integrationCatalog->syncProductToEnabledIntegrations($product, $providers);
     }
 
     protected function storeImage(Request $request, Product $product): void

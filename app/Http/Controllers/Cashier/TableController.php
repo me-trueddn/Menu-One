@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Cashier;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\DiningTable;
+use App\Models\OkcDevice;
 use App\Support\PaymentConfig;
 use App\Support\TableGrouping;
 use Illuminate\Http\RedirectResponse;
@@ -47,6 +48,7 @@ class TableController extends Controller
             'table' => $table,
             'order' => $activeOrder,
             'paymentMethods' => PaymentConfig::methodOptions(),
+            'okcDevices' => OkcDevice::query()->where('is_active', true)->orderBy('name')->get(),
         ]);
     }
 }

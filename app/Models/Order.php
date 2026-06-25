@@ -2,7 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\IntegrationOrderStatus;
+use App\Enums\IntegrationProvider;
 use App\Enums\OrderStatus;
+use App\Enums\OrderType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,6 +19,15 @@ class Order extends Model
         'tenant_id',
         'cafe_table_id',
         'user_id',
+        'order_type',
+        'integration_provider',
+        'external_order_id',
+        'integration_status',
+        'customer_name',
+        'customer_phone',
+        'delivery_note',
+        'integration_payload',
+        'payment_collected_externally',
         'status',
         'total',
         'discount_percent',
@@ -28,6 +40,11 @@ class Order extends Model
     protected function casts(): array
     {
         return [
+            'order_type' => OrderType::class,
+            'integration_provider' => IntegrationProvider::class,
+            'integration_status' => IntegrationOrderStatus::class,
+            'integration_payload' => 'array',
+            'payment_collected_externally' => 'boolean',
             'status' => OrderStatus::class,
             'total' => 'decimal:2',
             'discount_percent' => 'decimal:2',
@@ -35,6 +52,16 @@ class Order extends Model
             'split_paid_count' => 'integer',
             'closed_at' => 'datetime',
         ];
+    }
+
+    public function isDelivery(): bool
+    {
+        return $this->order_type === OrderType::Delivery;
+    }
+
+    public function integrationProviderLabel(): ?string
+    {
+        return $this->integration_provider?->label();
     }
 
     public function cafeTable(): BelongsTo

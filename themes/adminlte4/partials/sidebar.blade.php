@@ -67,6 +67,24 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a href="{{ route('admin.integrations.index') }}" class="nav-link {{ request()->routeIs('admin.integrations.*', 'admin.delivery-orders.*') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-plug"></i>
+                            <p>{{ __('menu.integrations') }}</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('admin.delivery-orders.index') }}" class="nav-link {{ request()->routeIs('admin.delivery-orders.*') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-bag-check"></i>
+                            <p>{{ __('menu.delivery_orders') }}</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('admin.okc-devices.index') }}" class="nav-link {{ request()->routeIs('admin.okc-devices.*') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-receipt-cutoff"></i>
+                            <p>{{ __('menu.okc_devices') }}</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a href="{{ route('kitchen.index') }}" class="nav-link {{ request()->routeIs('kitchen.*') ? 'active' : '' }}">
                             <i class="nav-icon bi bi-fire"></i>
                             <p>{{ __('menu.kitchen') }}</p>

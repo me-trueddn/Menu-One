@@ -16,13 +16,14 @@ class DiningTableController extends Controller
     public function index(): View
     {
         $categories = TableCategory::query()
-            ->with(['tables' => fn ($query) => $query->orderBy('name')])
+            ->with(['tables' => fn ($query) => $query->where('is_virtual', false)->orderBy('name')])
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
 
         $uncategorizedTables = DiningTable::query()
             ->whereNull('table_category_id')
+            ->where('is_virtual', false)
             ->orderBy('name')
             ->get();
 
