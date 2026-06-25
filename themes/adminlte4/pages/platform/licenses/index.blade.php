@@ -4,6 +4,9 @@
 @section('page-title', __('menu.licenses'))
 
 @section('page-actions')
+<a href="{{ route('platform.licenses.licensegate') }}" class="btn btn-outline-secondary btn-sm me-1">
+    <i class="bi bi-plug"></i> LicenseGate
+</a>
 <a href="{{ route('platform.licenses.create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> {{ __('menu.add') }}</a>
 @endsection
 

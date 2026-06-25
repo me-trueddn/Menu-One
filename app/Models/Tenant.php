@@ -32,6 +32,8 @@ class Tenant extends BaseTenant
             'stopped_at',
             'stop_note',
             'stopped_by_user_id',
+            'licensegate_license_id',
+            'licensegate_license_key',
         ];
     }
 
