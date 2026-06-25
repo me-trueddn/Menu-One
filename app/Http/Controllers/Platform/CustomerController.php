@@ -50,8 +50,11 @@ class CustomerController extends Controller
         $query = User::query()
             ->customers()
             ->with([
+                'assignedTenants.owner',
                 'assignedTenants.currentLicense.licenseType',
+                'tenant.owner',
                 'tenant.currentLicense.licenseType',
+                'ownedTenants.owner',
                 'ownedTenants.currentLicense.licenseType',
             ]);
 
@@ -237,6 +240,51 @@ class CustomerController extends Controller
         $customer->unlinkTenant($tenant);
 
         return back()->with('success', __('menu.tenant_removed'));
+    }
+
+    public function transferTenantOwnership(Request $request, User $customer, Tenant $tenant): RedirectResponse
+    {
+        abort_unless($customer->isCustomer(), 404);
+        abort_unless($customer->ownsTenant($tenant), 403);
+
+        $validated = $request->validate([
+            'new_owner' => ['required', 'string', 'max:255'],
+        ]);
+
+        $newOwner = User::query()
+            ->customers()
+            ->where(function ($query) use ($validated) {
+                $query
+                    ->where('email', $validated['new_owner'])
+                    ->orWhere('public_id', $validated['new_owner']);
+            })
+            ->first();
+
+        if ($newOwner === null) {
+            return back()->with('error', __('menu.tenant_owner_not_found'));
+        }
+
+        if ($newOwner->id === $customer->id) {
+            return back()->with('error', __('menu.tenant_owner_same_customer'));
+        }
+
+        app(UserCafeService::class)->linkAsCafeOwner($newOwner, $tenant);
+
+        return back()->with('success', __('menu.tenant_ownership_transferred'));
+    }
+
+    public function makeTenantOwner(User $customer, Tenant $tenant): RedirectResponse
+    {
+        abort_unless($customer->isCustomer(), 404);
+        abort_unless($customer->isLinkedToTenant($tenant), 404);
+
+        if ($customer->ownsTenant($tenant)) {
+            return back()->with('info', __('menu.tenant_already_owner'));
+        }
+
+        app(UserCafeService::class)->linkAsCafeOwner($customer, $tenant);
+
+        return back()->with('success', __('menu.tenant_owner_updated'));
     }
 
     public function destroy(User $customer): RedirectResponse

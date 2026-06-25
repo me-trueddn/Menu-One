@@ -188,19 +188,45 @@
                                             @if($linkedTenants->isNotEmpty())
                                                 <ul class="list-group mb-3">
                                                     @foreach($linkedTenants as $linkedTenant)
-                                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                                            <div>
-                                                                <strong>{{ $linkedTenant->name }}</strong>
-                                                                <code class="ms-2">{{ $linkedTenant->id }}</code>
-                                                                @if($customer->ownsTenant($linkedTenant))
-                                                                    <span class="badge text-bg-primary ms-1">{{ __('menu.tenant_owner') }}</span>
+                                                        <li class="list-group-item">
+                                                            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                                                <div>
+                                                                    <strong>{{ $linkedTenant->name }}</strong>
+                                                                    <code class="ms-2">{{ $linkedTenant->id }}</code>
+                                                                    @if($customer->ownsTenant($linkedTenant))
+                                                                        <span class="badge text-bg-primary ms-1">{{ __('menu.tenant_owner') }}</span>
+                                                                    @elseif($linkedTenant->owner)
+                                                                        <span class="text-muted small d-block mt-1">
+                                                                            {{ __('menu.current_tenant_owner') }}: {{ $linkedTenant->owner->email }}
+                                                                        </span>
+                                                                    @endif
+                                                                </div>
+                                                                @if($customer->isLinkedToTenant($linkedTenant))
+                                                                    <form action="{{ route('platform.customers.tenants.detach', [$customer, $linkedTenant]) }}" method="POST"
+                                                                          onsubmit="return confirm('{{ __('menu.confirm_remove_tenant') }}')">
+                                                                        @csrf @method('DELETE')
+                                                                        <button class="btn btn-sm btn-outline-danger">{{ __('menu.remove_tenant') }}</button>
+                                                                    </form>
                                                                 @endif
                                                             </div>
-                                                            @if($customer->isLinkedToTenant($linkedTenant))
-                                                                <form action="{{ route('platform.customers.tenants.detach', [$customer, $linkedTenant]) }}" method="POST"
-                                                                      onsubmit="return confirm('{{ __('menu.confirm_remove_tenant') }}')">
-                                                                    @csrf @method('DELETE')
-                                                                    <button class="btn btn-sm btn-outline-danger">{{ __('menu.remove_tenant') }}</button>
+
+                                                            @if($customer->ownsTenant($linkedTenant))
+                                                                <form method="POST" action="{{ route('platform.customers.tenants.transfer-ownership', [$customer, $linkedTenant]) }}"
+                                                                      onsubmit="return confirm('{{ __('menu.confirm_transfer_tenant_ownership') }}')">
+                                                                    @csrf
+                                                                    <label class="form-label small mb-1">{{ __('menu.transfer_tenant_ownership') }}</label>
+                                                                    <div class="input-group input-group-sm">
+                                                                        <input type="text" name="new_owner" class="form-control"
+                                                                               placeholder="{{ __('menu.new_tenant_owner') }}" required>
+                                                                        <button class="btn btn-outline-primary">{{ __('menu.transfer_tenant_ownership') }}</button>
+                                                                    </div>
+                                                                    <div class="form-text">{{ __('menu.transfer_tenant_ownership_hint') }}</div>
+                                                                </form>
+                                                            @elseif($customer->isLinkedToTenant($linkedTenant))
+                                                                <form method="POST" action="{{ route('platform.customers.tenants.make-owner', [$customer, $linkedTenant]) }}"
+                                                                      onsubmit="return confirm('{{ __('menu.confirm_make_tenant_owner') }}')">
+                                                                    @csrf
+                                                                    <button class="btn btn-sm btn-outline-primary">{{ __('menu.make_tenant_owner') }}</button>
                                                                 </form>
                                                             @endif
                                                         </li>

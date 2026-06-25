@@ -74,6 +74,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('customers/{customer}/toggle-email-verification', [CustomerController::class, 'toggleEmailVerification'])->name('customers.toggle-email-verification');
         Route::post('customers/{customer}/change-email', [CustomerController::class, 'changeEmail'])->name('customers.change-email');
         Route::post('customers/{customer}/tenants', [CustomerController::class, 'attachTenant'])->name('customers.tenants.attach');
+        Route::post('customers/{customer}/tenants/{tenant}/transfer-ownership', [CustomerController::class, 'transferTenantOwnership'])->name('customers.tenants.transfer-ownership');
+        Route::post('customers/{customer}/tenants/{tenant}/make-owner', [CustomerController::class, 'makeTenantOwner'])->name('customers.tenants.make-owner');
         Route::delete('customers/{customer}/tenants/{tenant}', [CustomerController::class, 'detachTenant'])->name('customers.tenants.detach');
         Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
         Route::post('users/{user}/tenants', [UserController::class, 'attachTenant'])->name('users.tenants.attach');

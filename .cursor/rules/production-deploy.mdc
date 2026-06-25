@@ -45,9 +45,11 @@ tenants:list
 | OPcache eski kod | Plesk PHP **Restart** |
 
 ### 4) Uyarılar (değişiklik varsa belirt)
-- `deploy:prepare-production` → session/cache temizler → **yeniden giriş**
-- Mail/captcha: `.env` `APP_KEY` dev ile aynı değilse panelden ayarları yeniden kaydet
-- Footer sürümü (`version:show`) deploy doğrulaması için kullan
+- `deploy:prepare-production` → session/cache temizler → **yeniden giriş** (users/tenants silinmez)
+- Deploy öncesi phpMyAdmin **yedek** alın
+- Canlıda **asla**: `migrate:fresh`, `db:wipe`, `db:seed`, dev SQL import
+- Doğru script: `plesk-post-deploy-sql-import.sh` — **yanlış**: `plesk-post-deploy.sh` (db:seed)
+- `deploy:check-production` deploy öncesi/sonrası çalışır (script otomatik)
 
 ### Kurallar
 - Sadece PHP/Blade değişikliği → genelde Git pull + deploy script yeterli

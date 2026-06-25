@@ -21,17 +21,24 @@ class DatabaseSeeder extends Seeder
         $superAdminEmail = env('SUPER_ADMIN_EMAIL');
 
         if (filled($superAdminEmail)) {
+            $attributes = [
+                'name' => env('SUPER_ADMIN_NAME', 'Platform Admin'),
+                'email_verified_at' => now(),
+                'is_super_admin' => true,
+                'is_active' => true,
+            ];
+
+            if (filled(env('SUPER_ADMIN_PASSWORD'))) {
+                $attributes['password'] = Hash::make((string) env('SUPER_ADMIN_PASSWORD'));
+            }
+
             $superAdmin = User::updateOrCreate(
                 ['email' => $superAdminEmail, 'tenant_id' => null],
-                [
-                    'name' => env('SUPER_ADMIN_NAME', 'Platform Admin'),
-                    'password' => Hash::make((string) env('SUPER_ADMIN_PASSWORD', 'password')),
-                    'email_verified_at' => now(),
-                    'is_super_admin' => true,
-                    'is_active' => true,
-                ]
+                $attributes,
             );
             $superAdmin->assignRole('platform_admin');
+        } elseif (User::query()->doesntExist()) {
+            $this->command?->warn('No users in database. Run: php artisan platform:recover-admin');
         }
 
         User::query()->whereNull('public_id')->each(function (User $user) {

@@ -23,6 +23,9 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, Notifiable;
 
+    /** @var list<string> */
+    public const CAFE_ROLE_NAMES = ['user', 'cafe_admin', 'waiter', 'cashier', 'kitchen'];
+
     protected $fillable = [
         'tenant_id',
         'public_id',
@@ -301,34 +304,28 @@ class User extends Authenticatable
 
     public function scopePlatformStaff(Builder $query): Builder
     {
-        return $query
-            ->whereNull('tenant_id')
-            ->where(function (Builder $builder) {
-                $builder
-                    ->where('is_super_admin', true)
-                    ->orWhere(function (Builder $staff) {
-                        $staff
-                            ->whereHas('roles')
-                            ->whereDoesntHave('roles', fn (Builder $roleQuery) => $roleQuery->where('name', 'user'));
-                    });
-            });
+        return $query->where(function (Builder $builder) {
+            $builder
+                ->where('is_super_admin', true)
+                ->orWhere(function (Builder $staff) {
+                    $staff
+                        ->whereNull('tenant_id')
+                        ->whereHas('roles', fn (Builder $roleQuery) => $roleQuery->whereNotIn('name', self::CAFE_ROLE_NAMES));
+                });
+        });
     }
 
     public function isPlatformStaffMember(): bool
     {
-        if ($this->tenant_id !== null) {
-            return false;
-        }
-
         if ($this->isSuperAdmin()) {
             return true;
         }
 
-        if ($this->isCustomer()) {
+        if ($this->tenant_id !== null) {
             return false;
         }
 
-        return $this->roles()->exists();
+        return $this->roles()->whereNotIn('name', self::CAFE_ROLE_NAMES)->exists();
     }
 
     public function scopeCustomers(Builder $query): Builder

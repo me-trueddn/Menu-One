@@ -20,6 +20,7 @@ use Illuminate\Auth\Events\Logout;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
@@ -39,6 +40,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        if (App::isProduction()) {
+            DB::prohibitDestructiveCommands();
+        }
+
         Schema::defaultStringLength(191);
 
         $activeTheme = config('themes.active', 'adminlte4');

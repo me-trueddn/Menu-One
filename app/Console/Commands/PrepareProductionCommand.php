@@ -49,6 +49,9 @@ class PrepareProductionCommand extends Command
             }
         }
 
+        $beforeUsers = Schema::hasTable('users') ? (int) DB::table('users')->count() : 0;
+        $beforeTenants = Schema::hasTable('tenants') ? (int) DB::table('tenants')->count() : 0;
+
         foreach (['cache', 'cache_locks', 'sessions', 'user_login_tokens'] as $table) {
             if (! Schema::hasTable($table)) {
                 continue;
@@ -58,11 +61,43 @@ class PrepareProductionCommand extends Command
             $this->line("Truncated {$table}");
         }
 
+        if (Schema::hasTable('users')) {
+            $userCount = (int) DB::table('users')->count();
+            $tenantCount = Schema::hasTable('tenants') ? (int) DB::table('tenants')->count() : 0;
+
+            if ($userCount === 0) {
+                $this->warn('users tablosu bos. Oturumlar silindi; giris yapamazsiniz. php artisan platform:recover-admin calistirin.');
+            }
+
+            if ($tenantCount === 0) {
+                $this->warn('tenants tablosu bos. Mevcut cafe kayitlari yok; gerekirse MySQL yedegini geri yukleyin.');
+            }
+        }
+
         Artisan::call('migrate', ['--force' => true]);
         $migrateOutput = trim(Artisan::output());
 
         if ($migrateOutput !== '') {
             $this->line($migrateOutput);
+        }
+
+        if (Schema::hasTable('users')) {
+            $afterUsers = (int) DB::table('users')->count();
+            $afterTenants = Schema::hasTable('tenants') ? (int) DB::table('tenants')->count() : 0;
+
+            if ($beforeUsers > 0 && $afterUsers < $beforeUsers) {
+                $this->error("GUVENLIK: users {$beforeUsers} → {$afterUsers}. Migration veri sildi; islemi durdurun.");
+
+                return self::FAILURE;
+            }
+
+            if ($beforeTenants > 0 && $afterTenants < $beforeTenants) {
+                $this->error("GUVENLIK: tenants {$beforeTenants} → {$afterTenants}. Migration veri sildi; islemi durdurun.");
+
+                return self::FAILURE;
+            }
+
+            $this->info("Veri kontrolu: users {$beforeUsers} → {$afterUsers}, tenants {$beforeTenants} → {$afterTenants}");
         }
 
         if (Schema::hasTable('settings')) {

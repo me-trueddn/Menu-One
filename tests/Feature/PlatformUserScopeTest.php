@@ -46,4 +46,16 @@ class PlatformUserScopeTest extends TestCase
         $this->assertTrue($admin->isPlatformStaffMember());
         $this->assertTrue(User::query()->platformStaff()->whereKey($admin->id)->exists());
     }
+
+    public function test_platform_admin_with_customer_role_is_still_listed_as_platform_user(): void
+    {
+        $admin = User::factory()->create([
+            'tenant_id' => null,
+            'email' => 'admin-with-user@platform.test',
+        ]);
+        $admin->assignRole(['platform_admin', 'user']);
+
+        $this->assertTrue($admin->isPlatformStaffMember());
+        $this->assertTrue(User::query()->platformStaff()->whereKey($admin->id)->exists());
+    }
 }

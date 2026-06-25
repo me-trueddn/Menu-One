@@ -23,6 +23,11 @@ fi
 
 php artisan package:discover --ansi
 
+php artisan deploy:check-production || {
+    echo "HATA: Uretim veritabani kontrolu basarisiz. Deploy durduruldu."
+    exit 1
+}
+
 php artisan optimize:clear
 php artisan config:clear
 php artisan deploy:prepare-production
@@ -43,6 +48,11 @@ php artisan route:cache
 php artisan view:cache
 
 php artisan oauth:diagnose || true
+
+php artisan deploy:check-production || {
+    echo "HATA: Deploy sonrasi veri kontrolu basarisiz."
+    exit 1
+}
 
 php artisan version:show
 php artisan tenants:list || {

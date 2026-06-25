@@ -80,9 +80,35 @@ Plesk       → Menu-One.git pull + deploy
 | Frontend (Vite) | Node: `ci` → `run build` |
 | `composer.lock` | PC'de `composer install --no-dev` + vendor commit; gerekirse Plesk Composer: `install --no-dev --optimize-autoloader` |
 
-**Not:** `deploy:prepare-production` session/cache temizler → kullanıcılar yeniden giriş yapar.
+**Not:** `deploy:prepare-production` session/cache temizler → kullanıcılar yeniden giriş yapar. **users / tenants / müşteri kayıtlarına dokunmaz.**
 
-Deployment script (`plesk-post-deploy-sql-import.sh`) yukarıdakilerin çoğunu otomatik yapar; elle sadece script yoksa veya hata sonrası kontrol için çalıştırın.
+---
+
+## Canlı veri güvenliği (önemli)
+
+| Komut | Canlıda? | Etki |
+|--------|----------|------|
+| `deploy:prepare-production` | Evet | Sadece cache, sessions, user_login_tokens temizler + `migrate --force` |
+| `deploy:check-production` | Evet (önce/sonra) | users/tenants sayısını raporlar |
+| `migrate --force` | Evet | Yeni tablo/kolon ekler; mevcut veriyi silmez |
+| `optimize:clear` / `config:cache` / `route:cache` / `view:cache` | Evet | Önbellek |
+| `tenants:repair-data` | Evet | Tenant ID onarımı; kullanıcı silmez |
+
+| Komut | Canlıda? | Etki |
+|--------|----------|------|
+| `migrate:fresh` | **HAYIR** | Tüm tabloları siler |
+| `db:wipe` | **HAYIR** | Tüm tabloları siler |
+| `db:seed` | **HAYIR** | Ayarları/rolleri etkileyebilir; `plesk-post-deploy.sh` sadece ilk kurulum içindir |
+| Dev `menu_one.sql` import | **HAYIR** | Canlı veriyi dev verisiyle değiştirir |
+| `DROP DATABASE` | **HAYIR** | — |
+
+**Deploy öncesi Plesk'te:** phpMyAdmin → `menu_one` → **Export** (yedek alın).
+
+**Doğru deployment script:** `deploy/plesk-post-deploy-sql-import.sh` (SQL import modu — dosya import etmez, sadece kod günceller).
+
+**Yanlış script:** `deploy/plesk-post-deploy.sh` → `db:seed` çalıştırır; **canlıda kullanmayın** (sadece boş ilk kurulum).
+
+`APP_ENV=production` iken `migrate:fresh` ve `db:wipe` artık engellenir.
 
 ---
 
