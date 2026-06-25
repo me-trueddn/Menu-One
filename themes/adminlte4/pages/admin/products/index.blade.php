@@ -48,7 +48,7 @@
                     <tr>
                         <td>
                             <div class="d-flex align-items-center gap-2">
-                                @if($url = \App\Support\ImageStorage::url($listedProduct->image_path))
+                                @if($url = \App\Support\ImageStorage::url($listedProduct->image_path, \App\Support\MediaLimits::variantForContext(\App\Support\MediaLimits::CONTEXT_PRODUCT)))
                                     <img src="{{ $url }}" alt="" class="rounded" style="width:32px;height:32px;object-fit:cover">
                                 @endif
                                 <span>{{ $listedProduct->name }}</span>

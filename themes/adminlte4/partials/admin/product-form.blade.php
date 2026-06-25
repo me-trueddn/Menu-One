@@ -2,7 +2,7 @@
     $product ??= null;
     $isEdit = $product !== null;
     $extras = old('extras', $product?->extras ?? []);
-    $imageUrl = $product?->image_path ? \App\Support\ImageStorage::url($product->image_path) : null;
+    $imageUrl = $product?->image_path ? \App\Support\ImageStorage::url($product->image_path, \App\Support\MediaLimits::variantForContext(\App\Support\MediaLimits::CONTEXT_PRODUCT)) : null;
 @endphp
 
 @push('styles')
@@ -247,9 +247,22 @@
                 </div>
                 <div class="col-12">
                     <div class="mo-field-label">{{ __('menu.product_video') }}</div>
+                    @if(\App\Support\CloudflarePolicy::streamEnabled())
+                        <div class="mb-2">
+                            <input type="file" name="video" class="form-control" accept="video/mp4">
+                            <div class="form-text">{{ __('menu.product_video_upload_hint') }}</div>
+                            @php $videoRef = $extras['video_ref'] ?? null; @endphp
+                            @if($videoRef && ($playback = \App\Support\MediaStorage::streamPlaybackUrl($videoRef)))
+                                <div class="form-text mt-1">
+                                    <a href="{{ $playback }}" target="_blank" rel="noopener">{{ __('menu.product_video_hosted') }}</a>
+                                </div>
+                            @endif
+                        </div>
+                    @endif
                     <div class="input-group">
                         <input type="text" name="extras[video_url]" class="form-control"
-                               value="{{ old('extras.video_url', $extras['video_url'] ?? '') }}">
+                               value="{{ old('extras.video_url', $extras['video_url'] ?? '') }}"
+                               placeholder="{{ __('menu.product_video_external_hint') }}">
                         <span class="input-group-text"><i class="bi bi-camera-video"></i></span>
                     </div>
                 </div>

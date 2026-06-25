@@ -141,10 +141,10 @@ class SeoPolicy
         if (! $path) {
             $logo = Setting::get('site_logo_path');
 
-            return $logo ? ImageStorage::url($logo) : Branding::defaultLogoUrl();
+            return $logo ? ImageStorage::url($logo, MediaLimits::variantForContext(MediaLimits::CONTEXT_SITE)) : Branding::defaultLogoUrl();
         }
 
-        return ImageStorage::url($path);
+        return ImageStorage::url($path, MediaLimits::variantForContext(MediaLimits::CONTEXT_SITE));
     }
 
     public static function organizationName(): string

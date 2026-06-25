@@ -4,14 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\Tenant;
-use App\Services\UserLoginTokenService;
 use App\Services\PasswordLifecycleService;
 use App\Services\TenantLicenseService;
 use App\Services\TwoFactorNotificationService;
 use App\Services\TwoFactorService;
 use App\Services\UserCafeService;
+use App\Services\UserLoginTokenService;
 use App\Support\CompanyDefaults;
 use App\Support\ImageStorage;
+use App\Support\MediaLimits;
 use App\Support\SecurityPolicy;
 use App\Support\TenantAccess;
 use App\Support\TenantIdGenerator;
@@ -217,7 +218,7 @@ class ProfileController extends Controller
             'company_phone' => ['nullable', 'string', 'max:30'],
             'company_email' => ['nullable', 'email', 'max:255'],
             'company_address' => ['nullable', 'string', 'max:1000'],
-            'logo' => ['nullable', 'image', 'max:2048'],
+            'logo' => MediaLimits::imageRules(MediaLimits::CONTEXT_LOGO),
         ]);
 
         $tenant = Tenant::create([

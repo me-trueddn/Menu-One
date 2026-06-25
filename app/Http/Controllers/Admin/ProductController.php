@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
+use App\Support\CloudflarePolicy;
 use App\Support\ImageStorage;
+use App\Support\MediaLimits;
+use App\Support\MediaStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -49,6 +52,7 @@ class ProductController extends Controller
         $product = Product::create($this->productAttributes($request, $validated));
 
         $this->storeImage($request, $product);
+        $this->storeVideo($request, $product);
 
         return redirect()
             ->route('admin.products.index')
@@ -69,6 +73,7 @@ class ProductController extends Controller
         $product->update($this->productAttributes($request, $validated, $product));
 
         $this->storeImage($request, $product);
+        $this->storeVideo($request, $product);
 
         return redirect()
             ->route('admin.products.index')
@@ -78,6 +83,13 @@ class ProductController extends Controller
     public function destroy(Product $product): RedirectResponse
     {
         ImageStorage::delete($product->image_path);
+
+        $videoRef = $product->extra('video_ref');
+
+        if (is_string($videoRef) && $videoRef !== '') {
+            MediaStorage::delete($videoRef);
+        }
+
         $product->delete();
 
         return redirect()
@@ -109,7 +121,8 @@ class ProductController extends Controller
             'purchase_price' => ['nullable', 'numeric', 'min:0'],
             'vat_rate' => ['required', 'integer', 'min:0', 'max:100'],
             'is_active' => ['boolean'],
-            'image' => ['nullable', 'image', 'max:2048'],
+            'image' => MediaLimits::imageRules(MediaLimits::CONTEXT_PRODUCT),
+            'video' => CloudflarePolicy::streamEnabled() ? MediaLimits::videoRules() : ['nullable'],
             'extras' => ['nullable', 'array'],
             'extras.cooking_time' => ['nullable', 'string', 'max:100'],
             'extras.calories' => ['nullable', 'string', 'max:100'],
@@ -138,12 +151,12 @@ class ProductController extends Controller
             'price' => $validated['price'],
             'purchase_price' => $validated['purchase_price'] ?? null,
             'vat_rate' => $validated['vat_rate'],
-            'extras' => $this->extrasFromRequest($request),
+            'extras' => $this->extrasFromRequest($request, $product),
             'is_active' => $request->boolean('is_active', $product ? $product->is_active : true),
         ];
     }
 
-    protected function extrasFromRequest(Request $request): array
+    protected function extrasFromRequest(Request $request, ?Product $product = null): array
     {
         $extras = $request->input('extras', []);
 
@@ -156,6 +169,7 @@ class ProductController extends Controller
             'application_exceptions' => $extras['application_exceptions'] ?? null,
             'extra_barcodes' => $extras['extra_barcodes'] ?? null,
             'video_url' => $extras['video_url'] ?? null,
+            'video_ref' => $product?->extra('video_ref'),
             'extra_images' => $extras['extra_images'] ?? null,
             'is_splittable' => $request->boolean('extras.is_splittable'),
             'options_note' => $extras['options_note'] ?? null,
@@ -173,5 +187,22 @@ class ProductController extends Controller
         $product->update([
             'image_path' => ImageStorage::storeProductFile($request->file('image'), $this->tenantId()),
         ]);
+    }
+
+    protected function storeVideo(Request $request, Product $product): void
+    {
+        if (! $request->hasFile('video')) {
+            return;
+        }
+
+        $videoRef = $product->extra('video_ref');
+
+        if (is_string($videoRef) && $videoRef !== '') {
+            MediaStorage::delete($videoRef);
+        }
+
+        $extras = $product->extras ?? [];
+        $extras['video_ref'] = MediaStorage::storeProductVideo($request->file('video'), $this->tenantId());
+        $product->update(['extras' => $extras]);
     }
 }

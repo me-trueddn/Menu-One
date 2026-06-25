@@ -9,6 +9,7 @@ use App\Services\SupportSessionService;
 use App\Services\TenantLicenseService;
 use App\Support\CompanyDefaults;
 use App\Support\ImageStorage;
+use App\Support\MediaLimits;
 use App\Support\TenantAccess;
 use App\Support\TenantIdGenerator;
 use Illuminate\Http\RedirectResponse;
@@ -194,7 +195,7 @@ class TenantController extends Controller
             'company_phone' => ['nullable', 'string', 'max:30'],
             'company_email' => ['nullable', 'email', 'max:255'],
             'company_address' => ['nullable', 'string', 'max:1000'],
-            'logo' => ['nullable', 'image', 'max:2048'],
+            'logo' => MediaLimits::imageRules(MediaLimits::CONTEXT_LOGO),
             'license_type_id' => ['nullable', 'exists:license_types,id'],
         ];
     }

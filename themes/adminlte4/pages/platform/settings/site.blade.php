@@ -340,6 +340,70 @@
     </div>
 
     <div class="card mt-3">
+        <div class="card-header">
+            <h5 class="mb-0">{{ __('menu.cloudflare_settings') }}</h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted small">{{ __('menu.cloudflare_settings_hint') }}</p>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <input type="hidden" name="cloudflare_images_enabled" value="0">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="cloudflare_images_enabled" id="cloudflare_images_enabled" value="1"
+                               @checked(old('cloudflare_images_enabled', $settings['cloudflare_images_enabled']))>
+                        <label class="form-check-label" for="cloudflare_images_enabled">{{ __('menu.cloudflare_images_enabled') }}</label>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <input type="hidden" name="cloudflare_stream_enabled" value="0">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="cloudflare_stream_enabled" id="cloudflare_stream_enabled" value="1"
+                               @checked(old('cloudflare_stream_enabled', $settings['cloudflare_stream_enabled']))>
+                        <label class="form-check-label" for="cloudflare_stream_enabled">{{ __('menu.cloudflare_stream_enabled') }}</label>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">{{ __('menu.cloudflare_account_id') }}</label>
+                    <input name="cloudflare_account_id" class="form-control"
+                           value="{{ old('cloudflare_account_id', $settings['cloudflare_account_id']) }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">{{ __('menu.cloudflare_account_hash') }}</label>
+                    <input name="cloudflare_account_hash" class="form-control"
+                           value="{{ old('cloudflare_account_hash', $settings['cloudflare_account_hash']) }}">
+                    <div class="form-text">{{ __('menu.cloudflare_account_hash_hint') }}</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">{{ __('menu.cloudflare_api_token') }}</label>
+                    <input type="password" name="cloudflare_api_token" class="form-control"
+                           placeholder="{{ $settings['has_cloudflare_api_token'] ? '••••••••' : '' }}">
+                    @if($settings['cloudflare_api_token_decrypt_failed'])
+                        <div class="form-text text-danger">{{ __('menu.oauth_secret_decrypt_failed_hint') }}</div>
+                    @endif
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">{{ __('menu.cloudflare_stream_subdomain') }}</label>
+                    <input name="cloudflare_stream_customer_subdomain" class="form-control"
+                           value="{{ old('cloudflare_stream_customer_subdomain', $settings['cloudflare_stream_customer_subdomain']) }}"
+                           placeholder="customer-xxxx.cloudflarestream.com">
+                    <div class="form-text">{{ __('menu.cloudflare_stream_subdomain_hint') }}</div>
+                </div>
+            </div>
+            <div class="alert alert-info small mb-0">
+                <div class="fw-semibold mb-1">{{ __('menu.cloudflare_variants_title') }}</div>
+                <p class="mb-1">{{ __('menu.cloudflare_variants_hint') }}</p>
+                <ul class="mb-2">
+                    @foreach($settings['cloudflare_image_variants'] as $variant)
+                        <li><code>{{ $variant }}</code></li>
+                    @endforeach
+                </ul>
+                <div class="mb-1">{{ __('menu.cloudflare_sample_delivery') }}: <code>{{ $settings['cloudflare_sample_delivery_url'] }}</code></div>
+                <div>{{ __('menu.cloudflare_sample_playback') }}: <code>{{ $settings['cloudflare_sample_playback_url'] }}</code></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-3">
         <div class="card-header border-bottom-0 pb-0">
             <h5 class="mb-3">{{ __('menu.notification_templates') }}</h5>
             <ul class="nav nav-tabs card-header-tabs" id="notificationTemplateTabs" role="tablist">

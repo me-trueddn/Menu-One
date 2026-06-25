@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Support\Branding;
 use App\Support\ImageStorage;
+use App\Support\MediaLimits;
+use App\Support\MediaStorage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -66,7 +68,17 @@ class Product extends Model
 
     public function imageUrl(): string
     {
-        return ImageStorage::url($this->image_path) ?? Branding::defaultLogoUrl();
+        return ImageStorage::url($this->image_path, MediaLimits::variantForContext(MediaLimits::CONTEXT_PRODUCT))
+            ?? Branding::defaultLogoUrl();
+    }
+
+    public function videoPlaybackUrl(): ?string
+    {
+        $ref = $this->extra('video_ref');
+
+        return is_string($ref) && $ref !== ''
+            ? MediaStorage::streamPlaybackUrl($ref)
+            : null;
     }
 
     public function category(): BelongsTo

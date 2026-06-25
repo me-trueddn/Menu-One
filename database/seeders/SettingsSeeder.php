@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Setting;
 use App\Support\CaptchaPolicy;
+use App\Support\CloudflarePolicy;
 use App\Support\OAuthPolicy;
 use App\Support\SecurityPolicy;
 use App\Support\SettingsDefaults;
@@ -22,6 +23,10 @@ class SettingsSeeder extends Seeder
         }
 
         foreach (OAuthPolicy::defaults() as $key => $value) {
+            Setting::setIfMissing($key, $value, 'site');
+        }
+
+        foreach (CloudflarePolicy::defaults() as $key => $value) {
             Setting::setIfMissing($key, $value, 'site');
         }
 

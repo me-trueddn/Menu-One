@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Platform;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Support\CaptchaPolicy;
+use App\Support\CloudflarePolicy;
 use App\Support\ImageStorage;
+use App\Support\MediaLimits;
 use App\Support\OAuthPolicy;
 use App\Support\SecretMask;
 use App\Support\SettingPersistence;
@@ -44,6 +46,7 @@ class SiteSettingsController extends Controller
         $site = Setting::mergedGroup('site', array_merge(
             CaptchaPolicy::defaults(),
             OAuthPolicy::defaults(),
+            CloudflarePolicy::defaults(),
             SettingsDefaults::siteSeedValues(),
         ));
 
@@ -76,6 +79,16 @@ class SiteSettingsController extends Controller
             'oauth_microsoft_secret_decrypt_failed' => OAuthPolicy::clientSecretDecryptFailed('microsoft'),
             'oauth_google_redirect' => OAuthPolicy::redirectUrl('google'),
             'oauth_microsoft_redirect' => OAuthPolicy::redirectUrl('microsoft'),
+            'cloudflare_images_enabled' => CloudflarePolicy::imagesEnabled(),
+            'cloudflare_stream_enabled' => CloudflarePolicy::streamEnabled(),
+            'cloudflare_account_id' => CloudflarePolicy::accountId(),
+            'cloudflare_account_hash' => CloudflarePolicy::accountHash(),
+            'cloudflare_stream_customer_subdomain' => CloudflarePolicy::streamCustomerSubdomain(),
+            'has_cloudflare_api_token' => CloudflarePolicy::apiToken() !== '',
+            'cloudflare_api_token_decrypt_failed' => CloudflarePolicy::apiTokenDecryptFailed(),
+            'cloudflare_sample_delivery_url' => CloudflarePolicy::sampleDeliveryUrl(),
+            'cloudflare_sample_playback_url' => CloudflarePolicy::samplePlaybackUrl(),
+            'cloudflare_image_variants' => CloudflarePolicy::IMAGE_VARIANTS,
             'verification_link_expires_minutes' => Setting::getFilled('verification_link_expires_minutes', $templates['verification_link_expires_minutes']),
             'email_verification_subject' => Setting::getFilled('email_verification_subject', $templates['email_verification_subject']),
             'email_verification_body' => Setting::getFilled('email_verification_body', $templates['email_verification_body']),
@@ -121,6 +134,10 @@ class SiteSettingsController extends Controller
             'oauth_google_client_secret' => ['nullable', 'string', 'max:255'],
             'oauth_microsoft_client_id' => ['nullable', 'string', 'max:255'],
             'oauth_microsoft_client_secret' => ['nullable', 'string', 'max:255'],
+            'cloudflare_account_id' => ['nullable', 'string', 'max:64'],
+            'cloudflare_account_hash' => ['nullable', 'string', 'max:64'],
+            'cloudflare_api_token' => ['nullable', 'string', 'max:255'],
+            'cloudflare_stream_customer_subdomain' => ['nullable', 'string', 'max:255'],
             'verification_link_expires_minutes' => ['nullable', 'integer', 'min:5', 'max:10080'],
             'email_verification_subject' => ['nullable', 'string', 'max:255'],
             'email_verification_body' => ['nullable', 'string', 'max:65535'],
@@ -139,7 +156,7 @@ class SiteSettingsController extends Controller
             'default_company_phone' => ['nullable', 'string', 'max:30'],
             'default_company_email' => ['nullable', 'email', 'max:255'],
             'default_company_address' => ['nullable', 'string', 'max:1000'],
-            'site_logo' => ['nullable', 'image', 'max:2048'],
+            'site_logo' => MediaLimits::imageRules(MediaLimits::CONTEXT_SITE),
             'site_logo_height' => ['required', 'integer', 'min:16', 'max:160'],
             'site_logo_height_register' => ['required', 'integer', 'min:16', 'max:120'],
             'site_sidebar_logo_height' => ['required', 'integer', 'min:16', 'max:120'],
@@ -165,6 +182,14 @@ class SiteSettingsController extends Controller
             'oauth_microsoft_client_id' => SettingPersistence::keepOrApply('oauth_microsoft_client_id', $request->input('oauth_microsoft_client_id')),
             'oauth_allow_login' => $request->input('oauth_allow_login', '0') === '1' ? '1' : '0',
             'oauth_allow_register' => $request->input('oauth_allow_register', '0') === '1' ? '1' : '0',
+            'cloudflare_images_enabled' => $request->input('cloudflare_images_enabled', '0') === '1' ? '1' : '0',
+            'cloudflare_stream_enabled' => $request->input('cloudflare_stream_enabled', '0') === '1' ? '1' : '0',
+            'cloudflare_account_id' => SettingPersistence::keepOrApply('cloudflare_account_id', $request->input('cloudflare_account_id')),
+            'cloudflare_account_hash' => SettingPersistence::keepOrApply('cloudflare_account_hash', $request->input('cloudflare_account_hash')),
+            'cloudflare_stream_customer_subdomain' => SettingPersistence::keepOrApply(
+                'cloudflare_stream_customer_subdomain',
+                $request->input('cloudflare_stream_customer_subdomain'),
+            ),
             'default_company_name' => $validated['default_company_name'] ?? '',
             'default_company_tax_number' => $validated['default_company_tax_number'] ?? '',
             'default_company_phone' => $validated['default_company_phone'] ?? '',
@@ -192,6 +217,10 @@ class SiteSettingsController extends Controller
 
         if (! empty($validated['oauth_microsoft_client_secret'])) {
             $pairs['oauth_microsoft_client_secret'] = Crypt::encryptString($validated['oauth_microsoft_client_secret']);
+        }
+
+        if (! empty($validated['cloudflare_api_token'])) {
+            $pairs['cloudflare_api_token'] = Crypt::encryptString(trim($validated['cloudflare_api_token']));
         }
 
         Setting::setMany($pairs, 'site');

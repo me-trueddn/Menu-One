@@ -26,7 +26,7 @@ class Branding
         $path = Setting::getFilled('site_logo_path');
 
         if ($path !== null) {
-            $url = ImageStorage::url($path);
+            $url = ImageStorage::url($path, MediaLimits::variantForContext(MediaLimits::CONTEXT_SITE));
             if ($url !== null) {
                 return $url;
             }
@@ -72,7 +72,7 @@ class Branding
         $path = Setting::getFilled('site_favicon_path');
 
         if ($path !== null) {
-            $url = ImageStorage::url($path);
+            $url = ImageStorage::url($path, MediaLimits::variantForContext(MediaLimits::CONTEXT_SITE));
             if ($url !== null) {
                 return $url;
             }
@@ -83,7 +83,7 @@ class Branding
 
     public static function tenantLogoUrl(?string $path): ?string
     {
-        return ImageStorage::url($path);
+        return ImageStorage::url($path, MediaLimits::variantForContext(MediaLimits::CONTEXT_LOGO));
     }
 
     /** Tenant logo when set; otherwise the site logo (never empty). */

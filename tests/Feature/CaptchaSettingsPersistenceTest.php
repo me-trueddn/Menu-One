@@ -20,19 +20,22 @@ class CaptchaSettingsPersistenceTest extends TestCase
         $admin = User::factory()->create(['is_super_admin' => true]);
         $admin->assignRole('platform_admin');
 
-        $this->actingAs($admin)->put(route('platform.settings.site.update'), $this->sitePayload([
+        $base = $this->sitePayload([
             'captcha_provider' => 'google',
             'captcha_site_key' => 'test-site-key',
             'captcha_secret_key' => 'test-secret-key',
             'captcha_login_enabled' => '1',
             'captcha_register_enabled' => '1',
             'captcha_password_reset_enabled' => '0',
-        ]))->assertRedirect();
+        ]);
 
-        $this->actingAs($admin)->put(route('platform.settings.site.update'), $this->sitePayload([
-            'site_name' => 'Updated Name',
-            'email_verification_subject' => 'Custom subject',
-        ]))
+        $this->actingAs($admin)->put(route('platform.settings.site.update'), $base)->assertRedirect();
+
+        $partial = $base;
+        $partial['site_name'] = 'Updated Name';
+        $partial['email_verification_subject'] = 'Custom subject';
+
+        $this->actingAs($admin)->put(route('platform.settings.site.update'), $partial)
             ->assertRedirect()
             ->assertSessionHasNoErrors();
 
@@ -49,7 +52,7 @@ class CaptchaSettingsPersistenceTest extends TestCase
         return array_merge([
             '_method' => 'PUT',
             'site_name' => 'Menu One',
-            'panel_url' => 'https://panel.example.com',
+            'panel_url' => 'http://localhost:8000/',
             'main_site_url' => 'https://example.com',
             'contact_phone' => '',
             'support_email' => '',
@@ -89,6 +92,11 @@ class CaptchaSettingsPersistenceTest extends TestCase
             'site_logo_height_register' => 32,
             'site_sidebar_logo_height' => 28,
             'site_sidebar_brand_height' => 56,
+            'cloudflare_images_enabled' => '0',
+            'cloudflare_stream_enabled' => '0',
+            'cloudflare_account_id' => '',
+            'cloudflare_account_hash' => '',
+            'cloudflare_stream_customer_subdomain' => '',
         ], $overrides);
     }
 }

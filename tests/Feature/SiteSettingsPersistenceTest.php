@@ -14,7 +14,7 @@ class SiteSettingsPersistenceTest extends TestCase
     use RefreshDatabase;
 
     /** @param  array<string, mixed>  $overrides */
-    protected function sitePayload(array $overrides = []): array
+    public static function sitePayload(array $overrides = []): array
     {
         return array_merge([
             '_method' => 'PUT',
@@ -59,6 +59,11 @@ class SiteSettingsPersistenceTest extends TestCase
             'site_logo_height_register' => 32,
             'site_sidebar_logo_height' => 28,
             'site_sidebar_brand_height' => 56,
+            'cloudflare_images_enabled' => '0',
+            'cloudflare_stream_enabled' => '0',
+            'cloudflare_account_id' => '',
+            'cloudflare_account_hash' => '',
+            'cloudflare_stream_customer_subdomain' => '',
         ], $overrides);
     }
 
@@ -69,7 +74,7 @@ class SiteSettingsPersistenceTest extends TestCase
         $admin = User::factory()->create(['is_super_admin' => true]);
         $admin->assignRole('platform_admin');
 
-        $base = $this->sitePayload([
+        $base = self::sitePayload([
             'site_logo_height' => 72,
             'site_logo_height_register' => 44,
             'site_sidebar_logo_height' => 36,
@@ -136,13 +141,13 @@ class SiteSettingsPersistenceTest extends TestCase
         $admin = User::factory()->create(['is_super_admin' => true]);
         $admin->assignRole('platform_admin');
 
-        $this->actingAs($admin)->put(route('platform.settings.site.update'), $this->sitePayload([
+        $this->actingAs($admin)->put(route('platform.settings.site.update'), self::sitePayload([
             'email_verification_body' => '<p>Custom verification</p>',
             'password_reset_body' => '<p>Custom reset</p>',
             'staff_invitation_body' => '<p>Custom invite</p>',
         ]))->assertRedirect();
 
-        $this->actingAs($admin)->put(route('platform.settings.site.update'), $this->sitePayload([
+        $this->actingAs($admin)->put(route('platform.settings.site.update'), self::sitePayload([
             'site_name' => 'Only Site Name Changed',
             'email_verification_body' => '',
             'password_reset_body' => '',

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Platform;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Support\ImageStorage;
+use App\Support\MediaLimits;
 use App\Support\SeoPolicy;
 use App\Support\SettingPersistence;
 use Illuminate\Http\RedirectResponse;
@@ -63,7 +64,7 @@ class SeoSettingsController extends Controller
             'seo_meta_keywords' => ['nullable', 'string', 'max:255'],
             'seo_organization_name' => ['nullable', 'string', 'max:120'],
             'seo_organization_url' => ['nullable', 'url', 'max:255'],
-            'seo_og_image' => ['nullable', 'image', 'max:2048'],
+            'seo_og_image' => MediaLimits::imageRules(MediaLimits::CONTEXT_SITE),
         ]);
 
         Setting::setMany([
