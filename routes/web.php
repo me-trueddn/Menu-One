@@ -19,7 +19,6 @@ use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\Kitchen\KitchenController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Platform\CustomerController;
-use App\Http\Controllers\Platform\LicenseGateSettingsController;
 use App\Http\Controllers\Platform\LicenseTypeController;
 use App\Http\Controllers\Platform\MailSettingsController;
 use App\Http\Controllers\Platform\SeoSettingsController;
@@ -97,10 +96,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('tenants/{tenant}/staff/{user}/impersonate', [TenantStaffController::class, 'impersonate'])->name('tenants.staff.impersonate');
         Route::post('tenants/{tenant}/stop', [TenantController::class, 'stop'])->name('tenants.stop');
         Route::post('tenants/{tenant}/resume', [TenantController::class, 'resume'])->name('tenants.resume');
-        Route::get('licenses/licensegate/settings', [LicenseGateSettingsController::class, 'edit'])->name('licenses.licensegate');
-        Route::put('licenses/licensegate/settings', [LicenseGateSettingsController::class, 'update'])->name('licenses.licensegate.update');
-        Route::post('licenses/licensegate/test', [LicenseGateSettingsController::class, 'test'])->name('licenses.licensegate.test');
-        Route::resource('licenses', LicenseTypeController::class)->except(['show']);
+        Route::get('licenses/issued', fn () => redirect()->route('platform.licenses.index'))->name('licenses.issued');
+        Route::get('licenses/licensegate/settings', fn () => redirect()->route('platform.licenses.index'))->name('licenses.licensegate');
+        Route::resource('licenses', LicenseTypeController::class)->except(['show'])->whereNumber('license');
     });
 
     Route::middleware(['tenant', 'cafe'])->prefix('admin')->name('admin.')->group(function () {

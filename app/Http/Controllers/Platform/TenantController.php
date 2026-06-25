@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Platform;
 use App\Http\Controllers\Controller;
 use App\Models\LicenseType;
 use App\Models\Tenant;
-use App\Services\LicenseGateService;
 use App\Services\SupportSessionService;
 use App\Services\TenantLicenseService;
 use App\Support\CompanyDefaults;
@@ -21,7 +20,6 @@ class TenantController extends Controller
 {
     public function __construct(
         private TenantLicenseService $licenses,
-        private LicenseGateService $licenseGate,
     ) {}
 
     public function index(Request $request): View
@@ -159,8 +157,6 @@ class TenantController extends Controller
             'stopped_by_user_id' => $this->authUser()->id,
         ]);
 
-        $this->licenseGate->setLicenseStatus($tenant, false);
-
         return back()->with('success', __('menu.cafe_stopped'));
     }
 
@@ -172,8 +168,6 @@ class TenantController extends Controller
             'stop_note' => null,
             'stopped_by_user_id' => null,
         ]);
-
-        $this->licenseGate->setLicenseStatus($tenant, true);
 
         return back()->with('success', __('menu.cafe_resumed'));
     }
