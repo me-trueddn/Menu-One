@@ -48,5 +48,6 @@ class DatabaseSeeder extends Seeder
         $this->call(ModulePermissionSeeder::class);
         $this->call(SettingsSeeder::class);
         $this->call(LicenseTypeSeeder::class);
+        $this->call(TicketSeeder::class);
     }
 }

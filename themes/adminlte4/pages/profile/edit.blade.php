@@ -439,11 +439,7 @@
         @endif
 
         @if($tab === 'ticket')
-            <div class="text-center py-4">
-                <i class="bi bi-ticket-perforated display-4 text-muted"></i>
-                <h5 class="mt-3">{{ __('menu.ticket') }}</h5>
-                <p class="text-muted mb-0">{{ __('menu.ticket_coming_soon') }}</p>
-            </div>
+            @include('theme::partials.profile.ticket-tab')
         @endif
     </div>
 </div>

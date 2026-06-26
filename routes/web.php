@@ -23,19 +23,24 @@ use App\Http\Controllers\Platform\LicenseTypeController;
 use App\Http\Controllers\Platform\MailSettingsController;
 use App\Http\Controllers\Platform\SeoSettingsController;
 use App\Http\Controllers\Platform\SiteSettingsController;
+use App\Http\Controllers\Platform\TicketCategoryController;
+use App\Http\Controllers\Platform\TicketController as PlatformTicketController;
+use App\Http\Controllers\Platform\TicketSettingsController;
+use App\Http\Controllers\Platform\TicketTagController;
 use App\Http\Controllers\Platform\TenantController;
 use App\Http\Controllers\Platform\TenantStaffController;
 use App\Http\Controllers\Platform\UserController;
 use App\Http\Controllers\Platform\UserGroupController;
 use App\Http\Controllers\Platform\UserSecuritySettingsController;
+use App\Models\Ticket;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\StaffInvitationController;
 use App\Http\Controllers\TenantSwitchController;
-use App\Http\Controllers\TicketController;
 use App\Http\Controllers\Waiter\OrderController as WaiterOrderController;
 use App\Http\Controllers\Waiter\TableController as WaiterTableController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/locale/{locale}', LocaleController::class)->name('locale.switch');
@@ -101,6 +106,16 @@ Route::middleware(['auth'])->group(function () {
         Route::get('licenses/issued', fn () => redirect()->route('platform.licenses.index'))->name('licenses.issued');
         Route::get('licenses/licensegate/settings', fn () => redirect()->route('platform.licenses.index'))->name('licenses.licensegate');
         Route::resource('licenses', LicenseTypeController::class)->except(['show'])->whereNumber('license');
+        Route::get('tickets/settings', [TicketSettingsController::class, 'edit'])->name('tickets.settings');
+        Route::put('tickets/settings', [TicketSettingsController::class, 'update'])->name('tickets.settings.update');
+        Route::resource('ticket-categories', TicketCategoryController::class)->except(['show']);
+        Route::get('ticket-tags', [TicketTagController::class, 'index'])->name('ticket-tags.index');
+        Route::post('ticket-tags', [TicketTagController::class, 'store'])->name('ticket-tags.store');
+        Route::delete('ticket-tags/{ticketTag}', [TicketTagController::class, 'destroy'])->name('ticket-tags.destroy');
+        Route::get('tickets', [PlatformTicketController::class, 'index'])->name('tickets.index');
+        Route::get('tickets/{ticket}', [PlatformTicketController::class, 'show'])->name('tickets.show');
+        Route::patch('tickets/{ticket}', [PlatformTicketController::class, 'update'])->name('tickets.update');
+        Route::post('tickets/{ticket}/reply', [PlatformTicketController::class, 'reply'])->name('tickets.reply');
     });
 
     Route::middleware(['tenant', 'cafe'])->prefix('admin')->name('admin.')->group(function () {
@@ -175,7 +190,15 @@ Route::middleware(['auth'])->group(function () {
     });
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::get('/ticket', [TicketController::class, 'index'])->name('ticket.index');
+    Route::get('/tickets', fn () => redirect()->route('profile.edit', ['tab' => 'ticket']))->name('ticket.index');
+    Route::get('/tickets/create', fn () => redirect()->route('profile.edit', ['tab' => 'ticket', 'ticket_action' => 'create']))->name('ticket.create');
+    Route::get('/tickets/{ticket}', function (Ticket $ticket) {
+        abort_unless(Auth::check() && $ticket->isOwnedBy(Auth::user()), 403);
+
+        return redirect()->route('profile.edit', ['tab' => 'ticket', 'ticket_id' => $ticket->id]);
+    })->name('ticket.show');
+    Route::post('/profile/tickets', [ProfileController::class, 'storeTicket'])->name('profile.tickets.store');
+    Route::post('/profile/tickets/{ticket}/reply', [ProfileController::class, 'replyTicket'])->name('profile.tickets.reply');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/email', [ProfileController::class, 'changeEmail'])->name('profile.change-email');
     Route::post('/profile/toggle-2fa', [ProfileController::class, 'startTwoFactorSetup'])->name('profile.two-factor.setup');

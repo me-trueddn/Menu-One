@@ -51,5 +51,15 @@ return [
             'route' => 'platform.licenses.index',
             'route_patterns' => ['platform.licenses.*'],
         ],
+        'tickets' => [
+            'label' => 'menu.ticket_management',
+            'icon' => 'bi-ticket-perforated',
+            'route' => 'platform.tickets.index',
+            'route_patterns' => [
+                'platform.tickets.*',
+                'platform.ticket-categories.*',
+                'platform.ticket-tags.*',
+            ],
+        ],
     ],
 ];

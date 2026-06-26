@@ -59,6 +59,7 @@ return [
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES '.(env('DB_CHARSET', 'utf8mb4')).' COLLATE '.(env('DB_COLLATION', 'utf8mb4_unicode_ci')),
             ]) : [],
         ],
 
@@ -79,6 +80,7 @@ return [
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES '.(env('DB_CHARSET', 'utf8mb4')).' COLLATE '.(env('DB_COLLATION', 'utf8mb4_unicode_ci')),
             ]) : [],
         ],
 

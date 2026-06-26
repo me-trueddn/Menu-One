@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\Tenant;
+use App\Models\Ticket;
+use App\Models\TicketCategory;
 use App\Services\PasswordLifecycleService;
 use App\Services\TenantLicenseService;
+use App\Services\TicketService;
 use App\Services\TwoFactorNotificationService;
 use App\Services\TwoFactorService;
 use App\Services\UserCafeService;
@@ -17,6 +20,7 @@ use App\Support\SecurityPolicy;
 use App\Support\TenantAccess;
 use App\Support\TenantIdGenerator;
 use App\Support\TenantLicenseGate;
+use App\Support\TicketSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -32,6 +36,7 @@ class ProfileController extends Controller
         private UserCafeService $cafes,
         private TwoFactorService $twoFactor,
         private TwoFactorNotificationService $twoFactorNotifications,
+        private TicketService $tickets,
     ) {}
 
     public function edit(Request $request): View
@@ -67,6 +72,38 @@ class ProfileController extends Controller
             }
         }
 
+        $ticketView = 'list';
+        $activeTicket = null;
+        $myTickets = null;
+        $ticketCategories = collect();
+        $linkedTenantsForTickets = collect();
+
+        if ($tab === 'ticket') {
+            $linkedTenantsForTickets = $user->linkedTenants();
+            $ticketCategories = TicketCategory::query()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get();
+
+            if ($request->query('ticket_action') === 'create') {
+                $ticketView = 'create';
+            } elseif ($request->filled('ticket_id')) {
+                $activeTicket = Ticket::query()
+                    ->where('user_id', $user->id)
+                    ->with(['category', 'assignee', 'tags', 'tenant.currentLicense.licenseType', 'messages.user', 'messages.attachments'])
+                    ->findOrFail($request->integer('ticket_id'));
+                $ticketView = 'show';
+            } else {
+                $myTickets = Ticket::query()
+                    ->where('user_id', $user->id)
+                    ->with(['category', 'assignee', 'tenant', 'tags'])
+                    ->orderByDesc('created_at')
+                    ->paginate(15)
+                    ->withQueryString();
+            }
+        }
+
         return view('theme::pages.profile.edit', [
             'user' => $user,
             'tab' => $tab,
@@ -78,6 +115,11 @@ class ProfileController extends Controller
             'companyDefaults' => CompanyDefaults::all(),
             'twoFactorGloballyEnabled' => SecurityPolicy::bool('security_2fa_enabled_globally'),
             'twoFactorSetup' => $twoFactorSetup,
+            'ticketView' => $ticketView,
+            'activeTicket' => $activeTicket,
+            'myTickets' => $myTickets,
+            'ticketCategories' => $ticketCategories,
+            'linkedTenantsForTickets' => $linkedTenantsForTickets,
         ]);
     }
 
@@ -87,6 +129,63 @@ class ProfileController extends Controller
 
         return Redirect::route('profile.edit', ['tab' => 'profile'])
             ->with('success', __('menu.messages.updated'));
+    }
+
+    public function storeTicket(Request $request): RedirectResponse
+    {
+        $user = $this->authUser();
+        $allowedTenantIds = $user->linkedTenants()->pluck('id')->all();
+
+        $validated = $request->validate([
+            'tenant_id' => ['required', 'string', Rule::in($allowedTenantIds)],
+            'category_id' => ['required', 'integer', 'exists:ticket_categories,id'],
+            'subject' => ['required', 'string', 'max:255'],
+            'body' => ['required', 'string', 'max:50000'],
+            'body_format' => ['nullable', Rule::in(['html', 'bbcode'])],
+            'attachments.*' => ['nullable', 'file', 'max:'.TicketSettings::maxSizeKb(), TicketSettings::extensionRule()],
+        ]);
+
+        $tenant = Tenant::query()->findOrFail($validated['tenant_id']);
+        abort_unless($user->isLinkedToTenant($tenant), 403);
+
+        $category = TicketCategory::query()->where('is_active', true)->findOrFail($validated['category_id']);
+
+        $ticket = $this->tickets->createForCustomer(
+            $user,
+            $tenant,
+            $category,
+            $validated['subject'],
+            $validated['body'],
+            $validated['body_format'] ?? 'html',
+            $request->file('attachments', []),
+        );
+
+        return redirect()
+            ->route('profile.edit', ['tab' => 'ticket', 'ticket_id' => $ticket->id])
+            ->with('success', __('menu.ticket_created'));
+    }
+
+    public function replyTicket(Request $request, Ticket $ticket): RedirectResponse
+    {
+        abort_unless($ticket->isOwnedBy($this->authUser()), 403);
+
+        $validated = $request->validate([
+            'body' => ['required', 'string', 'max:50000'],
+            'body_format' => ['nullable', Rule::in(['html', 'bbcode'])],
+            'attachments.*' => ['nullable', 'file', 'max:'.TicketSettings::maxSizeKb(), TicketSettings::extensionRule()],
+        ]);
+
+        $this->tickets->addCustomerReply(
+            $ticket,
+            $this->authUser(),
+            $validated['body'],
+            $validated['body_format'] ?? 'html',
+            $request->file('attachments', []),
+        );
+
+        return redirect()
+            ->route('profile.edit', ['tab' => 'ticket', 'ticket_id' => $ticket->id])
+            ->with('success', __('menu.ticket_reply_sent'));
     }
 
     public function changeEmail(Request $request): RedirectResponse

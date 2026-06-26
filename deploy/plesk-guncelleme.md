@@ -112,6 +112,63 @@ Plesk       → Menu-One.git pull + deploy
 
 ---
 
+## Ticket sistemi + Türkçe karakter (canlı deploy)
+
+### Ön koşul (.env)
+
+```env
+APP_LOCALE=tr
+DB_CHARSET=utf8mb4
+DB_COLLATION=utf8mb4_unicode_ci
+```
+
+Plesk phpMyAdmin → veritabanı `menu_one` → **Karakter kümesi: utf8mb4_unicode_ci**
+
+### Plesk Artisan sırası (ticket güncellemesi dahil)
+
+Deployment script (`plesk-post-deploy-sql-import.sh`) zaten çoğunu yapar. Elle gerekiyorsa **sırayla**:
+
+```
+php artisan optimize:clear
+php artisan deploy:check-production
+php artisan deploy:prepare-production
+php artisan db:ensure-utf8mb4
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+php artisan version:show
+php artisan tenants:list
+```
+
+`deploy:prepare-production` içinde otomatik:
+- `migrate --force` (ticket tabloları dahil)
+- `db:ensure-utf8mb4` (charset onarımı)
+- `TicketSeeder` (varsayılan kategoriler — mevcut veriyi silmez, `firstOrCreate`)
+- `PlatformModules::syncPermissions()` (ticket modül izinleri)
+
+### Türkçe `??` sorunu devam ederse
+
+1. `php artisan db:ensure-utf8mb4 --dry-run` → hangi tablolar latin1?
+2. `php artisan db:ensure-utf8mb4` → dönüştür
+3. `php artisan optimize:clear` + `php artisan view:cache`
+4. Plesk → PHP → **Restart** (OPcache)
+5. Tarayıcıda hard refresh (Ctrl+F5)
+
+**Not:** Eski latin1 ile kaydedilmiş metinler dönüşümden sonra düzelmeyebilir; o kayıtlar panelden yeniden kaydedilmeli.
+
+### Ticket modülü — deploy sonrası kontrol
+
+| Kontrol | Beklenen |
+|---------|----------|
+| `/platform/tickets` | Ticket listesi açılır |
+| Platform menü | Ticket Yönetimi görünür (izin varsa) |
+| `/profile?tab=ticket` | Müşteri ticket sekmesi |
+| `ticket_categories` tablosu | En az 3 varsayılan kategori |
+
+Platform admin değilse: Kullanıcı Grupları → `platform.tickets.view` / `edit` izinleri.
+
+---
+
 ## Prod / local farkı (cafe session, cafe oluşturma)
 
 **Semptom:** SQL'de tenant `619-718` ama panel `619` görüyor; cafe bağlanamıyor / oluşturulamıyor.

@@ -58,6 +58,21 @@ class CheckProductionCommand extends Command
             $this->info('Bekleyen migration yok.');
         }
 
+        if (in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
+            $this->newLine();
+            $schema = DB::selectOne('SELECT DEFAULT_CHARACTER_SET_NAME AS charset, DEFAULT_COLLATION_NAME AS collation FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = DATABASE()');
+            $badTables = DB::select("SELECT COUNT(*) AS c FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE' AND TABLE_COLLATION NOT LIKE 'utf8mb4%'");
+            $badCount = (int) ($badTables[0]->c ?? 0);
+
+            $this->line('DB charset: '.($schema->charset ?? '?').' / '.($schema->collation ?? '?'));
+
+            if (($schema->charset ?? '') !== 'utf8mb4' || $badCount > 0) {
+                $this->warn("Turkce karakter sorunu riski: {$badCount} tablo utf8mb4 degil. Calistirin: db:ensure-utf8mb4");
+            } else {
+                $this->info('DB utf8mb4 kontrolu OK.');
+            }
+        }
+
         $this->newLine();
         $this->comment('Guvenli (veri silmez): deploy:prepare-production, migrate --force, optimize:clear, config/route/view:cache');
         $this->warn('TEHLIKELI — canlida CALISTIRMAYIN: migrate:fresh, db:wipe, db:seed, dev SQL import');

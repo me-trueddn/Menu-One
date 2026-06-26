@@ -297,6 +297,16 @@ class User extends Authenticatable
         return $this->hasMany(Order::class);
     }
 
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class);
+    }
+
+    public function assignedTickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class, 'assigned_to_user_id');
+    }
+
     public function loginToken(): HasOne
     {
         return $this->hasOne(UserLoginToken::class);

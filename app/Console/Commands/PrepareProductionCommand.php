@@ -81,6 +81,18 @@ class PrepareProductionCommand extends Command
             $this->line($migrateOutput);
         }
 
+        Artisan::call('db:ensure-utf8mb4');
+        $utf8Output = trim(Artisan::output());
+
+        if ($utf8Output !== '') {
+            $this->line($utf8Output);
+        }
+
+        if (Schema::hasTable('ticket_categories')) {
+            Artisan::call('db:seed', ['--class' => 'Database\\Seeders\\TicketSeeder', '--force' => true]);
+            $this->info('Ticket varsayilan kategorileri senkronize edildi (TicketSeeder).');
+        }
+
         if (Schema::hasTable('users')) {
             $afterUsers = (int) DB::table('users')->count();
             $afterTenants = Schema::hasTable('tenants') ? (int) DB::table('tenants')->count() : 0;
