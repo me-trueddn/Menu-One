@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\CafeAuditLog;
 use App\Models\PlatformAuditLog;
 use App\Models\User;
+use App\Support\ClientIp;
 use App\Support\LogSettings;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -26,7 +27,7 @@ class AuditLogService
             'user_id' => $user?->id,
             'action' => Str::limit($action, 64, ''),
             'summary' => $summary,
-            'ip_address' => $request?->ip(),
+            'ip_address' => ClientIp::resolve($request),
             'route_name' => $request?->route()?->getName(),
             'http_method' => $request?->method(),
             'context' => $context === [] ? null : $this->compactContext($context),
@@ -41,6 +42,7 @@ class AuditLogService
         array $context = [],
         ?Model $subject = null,
         ?string $ipAddress = null,
+        ?Request $request = null,
     ): void {
         if ($tenantId === '') {
             return;
@@ -53,7 +55,7 @@ class AuditLogService
             'user_id' => $user?->id,
             'action' => Str::limit($action, 64, ''),
             'summary' => $summary,
-            'ip_address' => $ipAddress,
+            'ip_address' => $ipAddress ?? ClientIp::resolve($request),
             'subject_type' => $subject?->getMorphClass(),
             'subject_id' => $subject?->getKey(),
             'context' => $context === [] ? null : $this->compactContext($context),
@@ -87,9 +89,7 @@ class AuditLogService
             $user,
             'auth.login',
             __('menu.log_cafe_user_login', ['user' => $user->name, 'email' => $user->email]),
-            [],
-            null,
-            $request->ip(),
+            request: $request,
         );
     }
 
@@ -120,9 +120,7 @@ class AuditLogService
             $user,
             'auth.logout',
             __('menu.log_cafe_user_logout', ['user' => $user->name, 'email' => $user->email]),
-            [],
-            null,
-            $request->ip(),
+            request: $request,
         );
     }
 

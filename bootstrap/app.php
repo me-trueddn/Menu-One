@@ -44,19 +44,24 @@ return Application::configure(basePath: dirname(__DIR__))
             'integrations/webhook/*',
         ]);
 
-        $trustedProxies = array_values(array_filter(
-            array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', '127.0.0.1,::1'))),
-            fn (string $proxy): bool => $proxy !== '' && $proxy !== '*',
-        ));
+        $trustedProxiesEnv = trim((string) env('TRUSTED_PROXIES', '127.0.0.1,::1'));
 
-        if ($trustedProxies !== []) {
-            $middleware->trustProxies(
-                at: $trustedProxies,
-                headers: Request::HEADER_X_FORWARDED_FOR
-                    | Request::HEADER_X_FORWARDED_HOST
-                    | Request::HEADER_X_FORWARDED_PORT
-                    | Request::HEADER_X_FORWARDED_PROTO,
-            );
+        $forwardedHeaders = Request::HEADER_X_FORWARDED_FOR
+            | Request::HEADER_X_FORWARDED_HOST
+            | Request::HEADER_X_FORWARDED_PORT
+            | Request::HEADER_X_FORWARDED_PROTO;
+
+        if ($trustedProxiesEnv === '*') {
+            $middleware->trustProxies(at: '*', headers: $forwardedHeaders);
+        } else {
+            $trustedProxies = array_values(array_filter(
+                array_map('trim', explode(',', $trustedProxiesEnv)),
+                fn (string $proxy): bool => $proxy !== '',
+            ));
+
+            if ($trustedProxies !== []) {
+                $middleware->trustProxies(at: $trustedProxies, headers: $forwardedHeaders);
+            }
         }
     })
     ->withExceptions(function (Exceptions $exceptions) {
