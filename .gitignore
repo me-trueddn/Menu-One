@@ -4,6 +4,7 @@
 /public/storage
 /storage/*.key
 /storage/pail
+/storage/backups
 # vendor/ ve public/build/ Git'te — Plesk Composer/npm güvenilir değil
 .env
 .env.backup

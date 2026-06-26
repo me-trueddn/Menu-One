@@ -1,0 +1,35 @@
+---
+description: Destructive database commands require explicit user approval
+alwaysApply: true
+---
+
+# Database Safety
+
+Before running any command that can delete or overwrite database data, **stop and ask the user for explicit approval**.
+
+## Always ask first
+
+- `migrate:fresh`, `migrate:refresh`, `migrate:reset`
+- `db:wipe`
+- `db:seed` (when it may overwrite existing data)
+- SQL: `DROP DATABASE`, `DROP TABLE`, `TRUNCATE`, broad `DELETE`
+- Importing a `.sql` dump into a database that already has data (unless the user explicitly provided the file for restore)
+
+## Safe without asking (unless user says otherwise)
+
+- `migrate` / `migrate --force` (applies pending migrations only)
+- `deploy:check-production`
+- `deploy:prepare-production`
+- `config:clear`, `optimize:clear`
+- Read-only queries (`SELECT`, `SHOW`, counts)
+
+## Tests
+
+- Never run `php artisan test` while `bootstrap/cache/config.php` exists unless `config:clear` was run first.
+- Tests must use **sqlite** (`:memory:`), never the local MySQL `menu_one` database.
+- If a test run would touch MySQL, ask the user before proceeding.
+
+## Backups
+
+- Before `db:localize`, SQL import, or any destructive DB work, run `php artisan db:backup` (or use commands that auto-backup).
+- Backups are stored under `storage/backups/{timestamp}/`.

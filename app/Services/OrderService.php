@@ -10,11 +10,14 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\AuditLogService;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class OrderService
 {
+    public function __construct(private AuditLogService $auditLogs) {}
+
     public function openOrder(DiningTable $table, User $user): Order
     {
         if ($table->activeOrder()) {
@@ -30,6 +33,11 @@ class OrderService
             ]);
 
             $table->update(['status' => TableStatus::Occupied]);
+
+            $this->logCafe($order, $user, 'order.opened', __('menu.log_order_opened', [
+                'table' => $table->name,
+                'id' => $order->id,
+            ]));
 
             return $order;
         });
@@ -60,6 +68,12 @@ class OrderService
 
         $order->recalculateTotal();
 
+        $this->logCafe($order, auth()->user(), 'order.item_added', __('menu.log_order_item_added', [
+            'product' => $product->name,
+            'qty' => $qty,
+            'order_id' => $order->id,
+        ]), ['product_id' => $product->id, 'qty' => $qty]);
+
         return $item;
     }
 
@@ -85,6 +99,10 @@ class OrderService
             $item->delete();
             $order->recalculateTotal();
         });
+
+        $this->logCafe($order, auth()->user(), 'order.item_removed', __('menu.log_order_item_removed', [
+            'order_id' => $order->id,
+        ]));
     }
 
     public function updateItemQty(Order $order, OrderItem $item, int $qty): OrderItem
@@ -131,6 +149,8 @@ class OrderService
 
         $order->update(['status' => OrderStatus::Sent]);
 
+        $this->logCafe($order, auth()->user(), 'order.sent_kitchen', __('menu.log_order_sent_kitchen', ['id' => $order->id]));
+
         return $order->fresh(['items.product', 'cafeTable']);
     }
 
@@ -149,6 +169,8 @@ class OrderService
         }
 
         $order->update(['status' => OrderStatus::AwaitingPayment]);
+
+        $this->logCafe($order, auth()->user(), 'order.payment_requested', __('menu.log_order_payment_requested', ['id' => $order->id]));
 
         return $order->fresh(['items.product', 'cafeTable']);
     }
@@ -179,6 +201,8 @@ class OrderService
             $table = $order->cafeTable;
             app(ReservationService::class)->finalizeCheckoutForTable($table, $closedAt, $order->created_at);
             $table->update(['status' => TableStatus::Empty]);
+
+            $this->logCafe($order, auth()->user(), 'order.voided', __('menu.log_order_voided', ['id' => $order->id]));
 
             return $order->fresh();
         });
@@ -240,7 +264,23 @@ class OrderService
             app(ReservationService::class)->finalizeCheckoutForTable($table, $closedAt, $order->created_at);
             $table->update(['status' => TableStatus::Empty]);
 
+            $this->logCafe($order, auth()->user(), 'order.closed', __('menu.log_order_closed', [
+                'id' => $order->id,
+                'total' => $finalTotal,
+            ]), ['payment_method' => $paymentMethod]);
+
             return $order->fresh();
         });
+    }
+
+    private function logCafe(Order $order, ?User $user, string $action, string $summary, array $context = []): void
+    {
+        $tenantId = (string) ($order->tenant_id ?? '');
+
+        if ($tenantId === '' && function_exists('tenant') && tenant()) {
+            $tenantId = (string) tenant()->getTenantKey();
+        }
+
+        $this->auditLogs->cafe($tenantId, $user, $action, $summary, $context, $order);
     }
 }

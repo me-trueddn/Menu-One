@@ -61,5 +61,11 @@ return [
                 'platform.ticket-tags.*',
             ],
         ],
+        'logs' => [
+            'label' => 'menu.log_management',
+            'icon' => 'bi-journal-text',
+            'route' => 'platform.logs.index',
+            'route_patterns' => ['platform.logs.*'],
+        ],
     ],
 ];

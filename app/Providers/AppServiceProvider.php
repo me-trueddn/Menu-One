@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Models\TableCategory;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\AuditLogService;
 use App\Services\MailConfigService;
 use App\Services\SupportSessionService;
 use App\Services\UserImpersonationService;
@@ -16,6 +17,7 @@ use App\Support\SettingsDefaults;
 use App\Support\SiteConfig;
 use App\Support\TenantAccess;
 use App\Support\VersionManager;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
@@ -85,6 +87,26 @@ class AppServiceProvider extends ServiceProvider
         $this->registerSocialiteProviders();
         $this->applyAppVersion();
         $this->registerLogoutSessionCleanup();
+        $this->registerAuditLogging();
+    }
+
+    protected function registerAuditLogging(): void
+    {
+        Event::listen(Login::class, function (Login $event): void {
+            if (! $event->user instanceof User) {
+                return;
+            }
+
+            app(AuditLogService::class)->logAuthLogin($event->user, request());
+        });
+
+        Event::listen(Logout::class, function (Logout $event): void {
+            if (! $event->user instanceof User) {
+                return;
+            }
+
+            app(AuditLogService::class)->logAuthLogout($event->user, request());
+        }, 50);
     }
 
     protected function registerLogoutSessionCleanup(): void
@@ -99,7 +121,7 @@ class AppServiceProvider extends ServiceProvider
             App::terminating(function () use ($userId): void {
                 app(UserLoginTokenService::class)->deleteSessionRowsForUser($userId);
             });
-        });
+        }, 100);
     }
 
     protected function applyAppVersion(): void

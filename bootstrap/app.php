@@ -37,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant' => InitializeTenancy::class,
             'platform' => EnsurePlatformModuleAccess::class,
             'cafe' => \App\Http\Middleware\EnsureCafeAccess::class,
+            'log.platform' => \App\Http\Middleware\LogPlatformActivity::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

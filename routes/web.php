@@ -20,6 +20,7 @@ use App\Http\Controllers\Kitchen\KitchenController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Platform\CustomerController;
 use App\Http\Controllers\Platform\LicenseTypeController;
+use App\Http\Controllers\Platform\LogController;
 use App\Http\Controllers\Platform\MailSettingsController;
 use App\Http\Controllers\Platform\SeoSettingsController;
 use App\Http\Controllers\Platform\SiteSettingsController;
@@ -58,7 +59,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/tenant/select', [TenantSwitchController::class, 'index'])->name('tenant.select');
     Route::post('/tenant/select', [TenantSwitchController::class, 'store'])->name('tenant.select.store');
 
-    Route::middleware(['platform'])->prefix('platform')->name('platform.')->group(function () {
+    Route::middleware(['platform', 'log.platform'])->prefix('platform')->name('platform.')->group(function () {
         Route::get('users/security', [UserSecuritySettingsController::class, 'edit'])->name('users.security');
         Route::put('users/security', [UserSecuritySettingsController::class, 'update'])->name('users.security.update');
         Route::post('users/security/enforce-2fa', [UserSecuritySettingsController::class, 'enforceTwoFactor'])->name('users.security.enforce-2fa');
@@ -116,6 +117,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('tickets/{ticket}', [PlatformTicketController::class, 'show'])->name('tickets.show');
         Route::patch('tickets/{ticket}', [PlatformTicketController::class, 'update'])->name('tickets.update');
         Route::post('tickets/{ticket}/reply', [PlatformTicketController::class, 'reply'])->name('tickets.reply');
+        Route::get('logs', [LogController::class, 'index'])->name('logs.index');
+        Route::put('logs/settings', [LogController::class, 'updateSettings'])->name('logs.settings.update');
     });
 
     Route::middleware(['tenant', 'cafe'])->prefix('admin')->name('admin.')->group(function () {

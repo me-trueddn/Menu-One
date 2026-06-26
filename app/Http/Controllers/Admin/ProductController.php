@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\TenantIntegration;
 use App\Models\Category;
 use App\Models\Product;
+use App\Services\AuditLogService;
 use App\Services\IntegrationCatalogService;
 use App\Support\CloudflarePolicy;
 use App\Support\ImageStorage;
@@ -64,6 +65,8 @@ class ProductController extends Controller
         $this->storeVideo($request, $product);
         $this->syncIfRequested($product);
 
+        $this->logProduct('product.created', __('menu.log_product_created', ['name' => $product->name]), $product);
+
         return redirect()
             ->route('admin.products.index')
             ->with('success', __('menu.product_created'));
@@ -90,6 +93,8 @@ class ProductController extends Controller
         $this->storeVideo($request, $product);
         $this->syncIfRequested($product);
 
+        $this->logProduct('product.updated', __('menu.log_product_updated', ['name' => $product->name]), $product);
+
         return redirect()
             ->route('admin.products.index')
             ->with('success', __('menu.product_updated'));
@@ -105,7 +110,10 @@ class ProductController extends Controller
             MediaStorage::delete($videoRef);
         }
 
+        $name = $product->name;
         $product->delete();
+
+        $this->logProduct('product.deleted', __('menu.log_product_deleted', ['name' => $name]));
 
         return redirect()
             ->route('admin.products.index')
@@ -240,5 +248,17 @@ class ProductController extends Controller
         $extras = $product->extras ?? [];
         $extras['video_ref'] = MediaStorage::storeProductVideo($request->file('video'), $this->tenantId());
         $product->update(['extras' => $extras]);
+    }
+
+    private function logProduct(string $action, string $summary, ?Product $product = null): void
+    {
+        app(AuditLogService::class)->cafe(
+            $this->tenantId(),
+            $this->authUser(),
+            $action,
+            $summary,
+            $product ? ['product_id' => $product->id] : [],
+            $product,
+        );
     }
 }

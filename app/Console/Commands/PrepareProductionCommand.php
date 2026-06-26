@@ -93,6 +93,9 @@ class PrepareProductionCommand extends Command
             $this->info('Ticket varsayilan kategorileri senkronize edildi (TicketSeeder).');
         }
 
+        Artisan::call('db:seed', ['--class' => 'Database\\Seeders\\LogSeeder', '--force' => true]);
+        $this->info('Log varsayilan ayarlari senkronize edildi (LogSeeder).');
+
         if (Schema::hasTable('users')) {
             $afterUsers = (int) DB::table('users')->count();
             $afterTenants = Schema::hasTable('tenants') ? (int) DB::table('tenants')->count() : 0;
