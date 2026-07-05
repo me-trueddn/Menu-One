@@ -35,6 +35,12 @@
                             @endif
                         </td>
                         <td class="text-end text-nowrap">
+                            <form action="{{ route('admin.digital-menus.toggle-active', $menu) }}" method="POST" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-sm {{ $menu->is_active ? 'btn-outline-warning' : 'btn-outline-success' }}">
+                                    {{ $menu->is_active ? __('menu.deactivate') : __('menu.activate') }}
+                                </button>
+                            </form>
                             <a href="{{ route('admin.digital-menus.show', $menu) }}" class="btn btn-sm btn-outline-primary">
                                 {{ __('menu.qr_menu') }}
                             </a>

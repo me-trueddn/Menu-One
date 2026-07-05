@@ -345,6 +345,8 @@ return [
     'digital_menu_active' => 'Menü yayında',
     'digital_menu_created' => 'Dijital menü oluşturuldu.',
     'digital_menu_deleted' => 'Dijital menü silindi.',
+    'digital_menu_activated' => 'Dijital menü yayına alındı.',
+    'digital_menu_deactivated' => 'Dijital menü pasife alındı.',
     'digital_menus_empty' => 'Henüz dijital menü yok.',
     'digital_menu_empty' => 'Bu menüde gösterilecek aktif ürün bulunmuyor.',
     'digital_menu_url_hint' => 'Bu adresi QR kod ile paylaşın veya yazdırın. İçerik kategori ve ürünlerden otomatik gelir.',

@@ -78,4 +78,16 @@ class DigitalMenuController extends Controller
             ->route('admin.digital-menus.index')
             ->with('success', __('menu.digital_menu_deleted'));
     }
+
+    public function toggleActive(DigitalMenu $digitalMenu): RedirectResponse
+    {
+        $digitalMenu->update(['is_active' => ! $digitalMenu->is_active]);
+
+        return back()->with(
+            'success',
+            $digitalMenu->is_active
+                ? __('menu.digital_menu_activated')
+                : __('menu.digital_menu_deactivated'),
+        );
+    }
 }

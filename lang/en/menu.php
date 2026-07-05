@@ -345,6 +345,8 @@ return [
     'digital_menu_active' => 'Menu is published',
     'digital_menu_created' => 'Digital menu created.',
     'digital_menu_deleted' => 'Digital menu deleted.',
+    'digital_menu_activated' => 'Digital menu is now published.',
+    'digital_menu_deactivated' => 'Digital menu is now inactive.',
     'digital_menus_empty' => 'No digital menus yet.',
     'digital_menu_empty' => 'No active products to display on this menu.',
     'digital_menu_url_hint' => 'Share or print this URL as a QR code. Content is pulled from categories and products automatically.',

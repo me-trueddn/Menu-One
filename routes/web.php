@@ -141,6 +141,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('dijital-menuler/olustur', [AdminDigitalMenuController::class, 'create'])->name('digital-menus.create');
         Route::post('dijital-menuler', [AdminDigitalMenuController::class, 'store'])->name('digital-menus.store');
         Route::get('dijital-menuler/{digitalMenu}/qr-indir', [AdminDigitalMenuController::class, 'downloadQr'])->name('digital-menus.qr-download');
+        Route::post('dijital-menuler/{digitalMenu}/toggle-active', [AdminDigitalMenuController::class, 'toggleActive'])->name('digital-menus.toggle-active');
         Route::resource('dijital-menuler', AdminDigitalMenuController::class)
             ->except(['create', 'store', 'edit', 'update'])
             ->parameters(['dijital-menuler' => 'digitalMenu'])

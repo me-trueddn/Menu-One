@@ -2,6 +2,12 @@
 @section('title', __('menu.qr_menu').': '.$menu->name)
 @section('page-title', __('menu.qr_menu').': '.$menu->name)
 @section('page-actions')
+    <form action="{{ route('admin.digital-menus.toggle-active', $menu) }}" method="POST" class="d-inline">
+        @csrf
+        <button type="submit" class="btn btn-sm {{ $menu->is_active ? 'btn-outline-warning' : 'btn-outline-success' }}">
+            {{ $menu->is_active ? __('menu.deactivate') : __('menu.activate') }}
+        </button>
+    </form>
     <a href="{{ $publicUrl }}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm">
         <i class="bi bi-box-arrow-up-right me-1"></i>{{ __('menu.qr_menu_preview') }}
     </a>

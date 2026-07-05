@@ -134,4 +134,21 @@ class DigitalMenuTest extends TestCase
 
         $response->assertNotFound();
     }
+
+    public function test_cafe_admin_can_toggle_digital_menu_active_state(): void
+    {
+        $menu = DigitalMenu::create([
+            'name' => 'Salon',
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($this->admin)->post(route('admin.digital-menus.toggle-active', $menu));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+        $this->assertFalse($menu->fresh()->is_active);
+
+        $this->actingAs($this->admin)->post(route('admin.digital-menus.toggle-active', $menu));
+        $this->assertTrue($menu->fresh()->is_active);
+    }
 }
