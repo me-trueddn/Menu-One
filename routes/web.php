@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\DigitalMenuController as AdminDigitalMenuController;
 use App\Http\Controllers\Admin\DeliveryOrderController;
 use App\Http\Controllers\Admin\IntegrationController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\Admin\TableCategoryController as AdminTableCategoryCont
 use App\Http\Controllers\Cashier\PaymentController as CashierPaymentController;
 use App\Http\Controllers\Cashier\TableController as CashierTableController;
 use App\Http\Controllers\HomeController;
+use App\Http\Middleware\InitializeTenancyBySlug;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\Kitchen\KitchenController;
 use App\Http\Controllers\LocaleController;
@@ -35,6 +37,7 @@ use App\Http\Controllers\Platform\UserGroupController;
 use App\Http\Controllers\Platform\UserSecuritySettingsController;
 use App\Models\Ticket;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Public\DigitalMenuController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\StaffInvitationController;
@@ -48,6 +51,11 @@ Route::get('/locale/{locale}', LocaleController::class)->name('locale.switch');
 
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
+
+Route::middleware([InitializeTenancyBySlug::class])->group(function () {
+    Route::get('/dijital-menuler/{tenantId}/{menuPublicId}', [DigitalMenuController::class, 'show'])
+        ->name('digital-menu.show');
+});
 
 Route::get('/', HomeController::class);
 
@@ -130,6 +138,13 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('table-categories', AdminTableCategoryController::class)->except(['show', 'index']);
         Route::resource('categories', AdminCategoryController::class)->except(['show']);
         Route::resource('products', AdminProductController::class)->except(['show']);
+        Route::get('dijital-menuler/olustur', [AdminDigitalMenuController::class, 'create'])->name('digital-menus.create');
+        Route::post('dijital-menuler', [AdminDigitalMenuController::class, 'store'])->name('digital-menus.store');
+        Route::get('dijital-menuler/{digitalMenu}/qr-indir', [AdminDigitalMenuController::class, 'downloadQr'])->name('digital-menus.qr-download');
+        Route::resource('dijital-menuler', AdminDigitalMenuController::class)
+            ->except(['create', 'store', 'edit', 'update'])
+            ->parameters(['dijital-menuler' => 'digitalMenu'])
+            ->names('digital-menus');
         Route::resource('staff', AdminStaffController::class)->except(['show']);
         Route::get('/reports', [AdminReportController::class, 'index'])->name('reports.index');
 

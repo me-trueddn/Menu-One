@@ -61,6 +61,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a href="{{ route('admin.digital-menus.index') }}" class="nav-link {{ request()->routeIs('admin.digital-menus.*') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-qr-code"></i>
+                            <p>{{ __('menu.digital_menus') }}</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a href="{{ route('admin.operations.index') }}" class="nav-link {{ request()->routeIs('admin.operations.*') ? 'active' : '' }}">
                             <i class="nav-icon bi bi-activity"></i>
                             <p>{{ __('menu.operations') }}</p>

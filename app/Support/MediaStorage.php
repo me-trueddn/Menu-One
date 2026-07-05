@@ -39,6 +39,16 @@ class MediaStorage
         );
     }
 
+    public static function storeCategoryFile(UploadedFile $file, string $tenantId): string
+    {
+        return static::storeImageFile(
+            $file,
+            MediaLimits::CONTEXT_PRODUCT,
+            static::CUSTOMER_DIR.'/'.static::safeTenantId($tenantId).'/categories',
+            ['tenant_id' => $tenantId],
+        );
+    }
+
     /**
      * @param  array<string, string>  $metadata
      */

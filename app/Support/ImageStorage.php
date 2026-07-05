@@ -25,6 +25,11 @@ class ImageStorage
         return MediaStorage::storeProductFile($file, $tenantId);
     }
 
+    public static function storeCategoryFile(UploadedFile $file, string $tenantId): string
+    {
+        return MediaStorage::storeCategoryFile($file, $tenantId);
+    }
+
     public static function storePublicFile(UploadedFile $file, string $directory): string
     {
         return MediaStorage::storePublicFile($file, $directory);

@@ -197,6 +197,12 @@
                     </select>
                     @error('category_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
+                <div class="col-md-4">
+                    <div class="mo-field-label">{{ __('menu.product_sort_order') }}</div>
+                    <input type="number" name="sort_order" class="form-control @error('sort_order') is-invalid @enderror"
+                           value="{{ old('sort_order', $product?->sort_order ?? 0) }}" min="0">
+                    @error('sort_order')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
                 <div class="col-12">
                     <div class="mo-field-label">{{ __('menu.product_printers') }}</div>
                     <input type="text" class="form-control" disabled placeholder="{{ __('menu.product_printers_placeholder') }}">

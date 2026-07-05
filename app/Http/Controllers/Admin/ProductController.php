@@ -26,7 +26,7 @@ class ProductController extends Controller
     {
         $search = trim((string) $request->query('q', ''));
 
-        $query = Product::query()->with('category')->orderBy('name');
+        $query = Product::query()->with('category')->orderBy('sort_order')->orderBy('name');
 
         if ($search !== '') {
             $query->where(function ($builder) use ($search) {
@@ -130,6 +130,7 @@ class ProductController extends Controller
             ->all();
 
         return $request->validate([
+            'sort_order' => ['nullable', 'integer', 'min:0'],
             'category_id' => ['required', 'exists:categories,id'],
             'name' => ['required', 'string', 'max:255'],
             'code' => [
@@ -173,6 +174,7 @@ class ProductController extends Controller
     {
         return [
             'category_id' => $validated['category_id'],
+            'sort_order' => $validated['sort_order'] ?? 0,
             'name' => $validated['name'],
             'code' => $validated['code'] ?? null,
             'description' => $validated['description'] ?? null,
