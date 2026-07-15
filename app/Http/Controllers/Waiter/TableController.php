@@ -50,7 +50,7 @@ class TableController extends Controller
         $upcomingReservations = $table->upcomingReservations;
 
         $categories = Category::query()
-            ->with(['products' => fn ($q) => $q->where('is_active', true)->orderBy('name')])
+            ->with(['products' => fn ($q) => $q->where('is_active', true)->orderBy('sort_order')->orderBy('name')])
             ->orderBy('sort_order')
             ->get();
 

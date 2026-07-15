@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Support\ImageStorage;
+use App\Support\MediaLimits;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -27,14 +29,17 @@ class CategoryController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
+            'image' => MediaLimits::imageRules(MediaLimits::CONTEXT_PRODUCT),
         ]);
 
-        Category::create([
+        $category = Category::create([
             'name' => $validated['name'],
             'sort_order' => $validated['sort_order'] ?? 0,
         ]);
 
-        return redirect()->route('admin.categories.index')->with('success', 'Kategori eklendi.');
+        $this->storeImage($request, $category);
+
+        return redirect()->route('admin.categories.index')->with('success', __('menu.category_created'));
     }
 
     public function edit(Category $category): View
@@ -47,6 +52,8 @@ class CategoryController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
+            'image' => MediaLimits::imageRules(MediaLimits::CONTEXT_PRODUCT),
+            'remove_image' => ['boolean'],
         ]);
 
         $category->update([
@@ -54,13 +61,34 @@ class CategoryController extends Controller
             'sort_order' => $validated['sort_order'] ?? 0,
         ]);
 
-        return redirect()->route('admin.categories.index')->with('success', 'Kategori güncellendi.');
+        if ($request->boolean('remove_image')) {
+            ImageStorage::delete($category->image_path);
+            $category->update(['image_path' => null]);
+        }
+
+        $this->storeImage($request, $category);
+
+        return redirect()->route('admin.categories.index')->with('success', __('menu.category_updated'));
     }
 
     public function destroy(Category $category): RedirectResponse
     {
+        ImageStorage::delete($category->image_path);
         $category->delete();
 
-        return redirect()->route('admin.categories.index')->with('success', 'Kategori silindi.');
+        return redirect()->route('admin.categories.index')->with('success', __('menu.category_deleted'));
+    }
+
+    protected function storeImage(Request $request, Category $category): void
+    {
+        if (! $request->hasFile('image')) {
+            return;
+        }
+
+        ImageStorage::delete($category->image_path);
+
+        $category->update([
+            'image_path' => ImageStorage::storeCategoryFile($request->file('image'), (string) tenant()->getTenantKey()),
+        ]);
     }
 }

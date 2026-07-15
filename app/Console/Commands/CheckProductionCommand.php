@@ -22,6 +22,12 @@ class CheckProductionCommand extends Command
         $this->line('APP_URL: '.config('app.url'));
         $this->line('PANEL_URL: '.config('site.panel_url', '—'));
 
+        if (! file_exists(public_path('storage'))) {
+            $this->warn('public/storage baglantisi yok — yuklenen resimler 403/404 verebilir. Calistirin: storage:link --force');
+        } else {
+            $this->info('public/storage baglantisi mevcut.');
+        }
+
         if (! Schema::hasTable('users')) {
             $this->error('users tablosu yok. Once migrate calistirin.');
 

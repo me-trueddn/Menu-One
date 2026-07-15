@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Schema;
 class LocalizeDatabaseCommand extends Command
 {
     protected $signature = 'db:localize
-        {--from=https://panel.trueddn.com.tr : Production panel URL to replace}
+        {--from=http://localhost:8000 : Production panel URL to replace}
         {--to= : Local panel URL (defaults to PANEL_URL / APP_URL from .env)}
         {--no-backup : Skip automatic backup (not recommended)}';
 

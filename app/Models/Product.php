@@ -26,6 +26,7 @@ class Product extends Model
     protected $fillable = [
         'tenant_id',
         'category_id',
+        'sort_order',
         'name',
         'code',
         'description',
@@ -70,6 +71,20 @@ class Product extends Model
     {
         return ImageStorage::url($this->image_path, MediaLimits::variantForContext(MediaLimits::CONTEXT_PRODUCT))
             ?? Branding::defaultLogoUrl();
+    }
+
+    public function hasMenuImage(): bool
+    {
+        return is_string($this->image_path) && trim($this->image_path) !== '';
+    }
+
+    public function menuImageUrl(): ?string
+    {
+        if (! $this->hasMenuImage()) {
+            return null;
+        }
+
+        return ImageStorage::url($this->image_path, MediaLimits::variantForContext(MediaLimits::CONTEXT_PRODUCT));
     }
 
     public function videoPlaybackUrl(): ?string

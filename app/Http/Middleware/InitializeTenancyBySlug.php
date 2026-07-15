@@ -18,7 +18,7 @@ class InitializeTenancyBySlug
             return $next($request);
         }
 
-        $slug = (string) $request->route('tenantSlug');
+        $slug = (string) ($request->route('tenantSlug') ?? $request->route('tenantId'));
         $tenant = Tenant::query()
             ->where('slug', $slug)
             ->orWhere('id', $slug)
