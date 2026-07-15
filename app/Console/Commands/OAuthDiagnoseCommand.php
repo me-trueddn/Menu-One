@@ -10,6 +10,7 @@ use App\Support\SiteUrl;
 use App\Support\VersionManager;
 use Illuminate\Console\Command;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\AbstractProvider;
 
 class OAuthDiagnoseCommand extends Command
 {
@@ -84,9 +85,14 @@ class OAuthDiagnoseCommand extends Command
     {
         SocialAuthService::applyConfig();
 
-        $driver = Socialite::driver('google')
-            ->redirectUrl(OAuthPolicy::redirectUrl('google'))
-            ->stateless();
+        $driver = Socialite::driver('google');
+
+        if (! $driver instanceof AbstractProvider) {
+            return '—';
+        }
+
+        $driver->redirectUrl(OAuthPolicy::redirectUrl('google'));
+        $driver->stateless();
 
         $reflection = new \ReflectionClass($driver);
         $method = $reflection->getMethod('getAuthUrl');

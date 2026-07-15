@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\OrderStatus;
 use App\Enums\ReservationStatus;
+use App\Enums\TableStatus;
 use App\Models\DiningTable;
 use App\Models\LicenseType;
 use App\Models\Order;
@@ -24,6 +25,8 @@ class TableDayScopeTest extends TestCase
 
     protected User $waiter;
 
+    protected User $cashier;
+
     protected DiningTable $table;
 
     protected function setUp(): void
@@ -32,7 +35,9 @@ class TableDayScopeTest extends TestCase
 
         Carbon::setTestNow(Carbon::parse('2026-06-19 12:00:00'));
 
-        Role::firstOrCreate(['name' => 'waiter', 'guard_name' => 'web']);
+        foreach (['waiter', 'cashier'] as $role) {
+            Role::firstOrCreate(['name' => $role, 'guard_name' => 'web']);
+        }
 
         LicenseType::firstOrCreate(
             ['slug' => 'trial-30'],
@@ -57,12 +62,15 @@ class TableDayScopeTest extends TestCase
         $this->waiter = User::factory()->create(['tenant_id' => $this->tenant->id]);
         $this->waiter->assignRole('waiter');
 
+        $this->cashier = User::factory()->create(['tenant_id' => $this->tenant->id]);
+        $this->cashier->assignRole('cashier');
+
         tenancy()->initialize($this->tenant);
 
         $this->table = DiningTable::create(['name' => 'Masa 1', 'capacity' => 4, 'status' => 'empty']);
     }
 
-    public function test_table_hides_yesterdays_payable_order(): void
+    public function test_table_keeps_yesterdays_payable_order_visible(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-06-19 12:00:00'));
 
@@ -80,7 +88,12 @@ class TableDayScopeTest extends TestCase
 
         $this->table->unsetRelations();
 
-        $this->assertNull($this->table->activeOrder());
+        $active = $this->table->activeOrder();
+
+        $this->assertNotNull($active);
+        $this->assertTrue($active->is($order));
+        $this->assertTrue($active->isCarryOver());
+        $this->assertSame(TableStatus::Occupied, $this->table->displayStatus());
     }
 
     public function test_table_shows_todays_payable_order(): void
@@ -97,6 +110,7 @@ class TableDayScopeTest extends TestCase
         $this->table->unsetRelations();
 
         $this->assertTrue($this->table->activeOrder()?->is($order));
+        $this->assertFalse($this->table->activeOrder()->isCarryOver());
     }
 
     public function test_table_hides_tomorrows_reservation(): void
@@ -137,9 +151,11 @@ class TableDayScopeTest extends TestCase
         $this->assertTrue($this->table->nextReservation()?->is($reservation));
     }
 
-    public function test_waiter_tables_index_hides_stale_order_card_state(): void
+    public function test_waiter_tables_index_shows_stale_order_as_occupied(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-06-19 12:00:00'));
+
+        $this->table->update(['status' => TableStatus::Occupied]);
 
         $order = Order::create([
             'cafe_table_id' => $this->table->id,
@@ -157,8 +173,39 @@ class TableDayScopeTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Masa 1');
-        $response->assertSee('text-bg-success', false);
-        $response->assertDontSee('>Dolu<', false);
+        $response->assertSee('Dolu');
+        $response->assertSee('data-table-status="occupied"', false);
+    }
+
+    public function test_cashier_can_open_yesterdays_awaiting_payment_bill(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-19 12:00:00'));
+
+        $this->table->update(['status' => TableStatus::Occupied]);
+
+        $order = Order::create([
+            'cafe_table_id' => $this->table->id,
+            'user_id' => $this->waiter->id,
+            'status' => OrderStatus::AwaitingPayment,
+            'total' => 150,
+        ]);
+
+        Order::query()->whereKey($order->id)->update([
+            'created_at' => Carbon::parse('2026-06-18 22:30:00'),
+            'updated_at' => Carbon::parse('2026-06-18 22:30:00'),
+        ]);
+
+        $this->actingAs($this->cashier)
+            ->get(route('cashier.tables.index'))
+            ->assertOk()
+            ->assertSee('Masa 1')
+            ->assertSee(__('menu.order_from_previous_day'))
+            ->assertSee(__('menu.take_payment'));
+
+        $this->actingAs($this->cashier)
+            ->get(route('cashier.tables.show', $this->table))
+            ->assertOk()
+            ->assertSee(__('menu.order_from_previous_day'));
     }
 
     protected function tearDown(): void

@@ -26,7 +26,12 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="mb-0">{{ __('menu.order_summary') }}</h5>
-                <span class="badge {{ $order->status->badgeClass() }}">{{ $order->status->label() }}</span>
+                <div class="d-flex flex-wrap gap-1">
+                    <span class="badge {{ $order->status->badgeClass() }}">{{ $order->status->label() }}</span>
+                    @if($order->isCarryOver())
+                        <span class="badge text-bg-danger">{{ __('menu.order_from_previous_day') }}</span>
+                    @endif
+                </div>
             </div>
             <div class="card-body p-0">
                 <table class="table mb-0 align-middle">

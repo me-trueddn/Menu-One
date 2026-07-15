@@ -54,9 +54,10 @@ class DiningTable extends Model
 
     public function payableOrder(): HasOne
     {
+        // No "today only" filter: overnight open / awaiting_payment bills
+        // must stay visible for waiter + cashier until closed.
         return $this->hasOne(Order::class, 'cafe_table_id')
             ->whereIn('status', OrderStatus::payableValues())
-            ->whereDate('created_at', today())
             ->latestOfMany();
     }
 

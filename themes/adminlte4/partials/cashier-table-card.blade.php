@@ -13,8 +13,12 @@
                 @if($order)
                     <div class="mt-2">
                         <span class="badge {{ $order->status->badgeClass() }}">{{ $order->status->label() }}</span>
+                        @if($order->isCarryOver())
+                            <span class="badge text-bg-danger">{{ __('menu.order_from_previous_day') }}</span>
+                        @endif
                     </div>
                     <div class="mt-2 fw-semibold">{{ number_format($order->total, 2) }} ₺</div>
+                    <div class="small text-muted">{{ $order->created_at?->format('d.m.Y H:i') }}</div>
                     <div class="mt-1"><span class="badge text-bg-success">{{ __('menu.take_payment') }}</span></div>
                 @endif
             </div>

@@ -59,6 +59,18 @@ class Order extends Model
         return $this->order_type === OrderType::Delivery;
     }
 
+    /**
+     * Unpaid bill opened on a previous calendar day (carry-over to cashier/waiter).
+     */
+    public function isCarryOver(): bool
+    {
+        if ($this->created_at === null) {
+            return false;
+        }
+
+        return ! $this->created_at->isSameDay(now());
+    }
+
     public function integrationProviderLabel(): ?string
     {
         return $this->integration_provider?->label();

@@ -11,6 +11,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\AuditLogService;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -68,7 +69,7 @@ class OrderService
 
         $order->recalculateTotal();
 
-        $this->logCafe($order, auth()->user(), 'order.item_added', __('menu.log_order_item_added', [
+        $this->logCafe($order, $this->actor(), 'order.item_added', __('menu.log_order_item_added', [
             'product' => $product->name,
             'qty' => $qty,
             'order_id' => $order->id,
@@ -100,7 +101,7 @@ class OrderService
             $order->recalculateTotal();
         });
 
-        $this->logCafe($order, auth()->user(), 'order.item_removed', __('menu.log_order_item_removed', [
+        $this->logCafe($order, $this->actor(), 'order.item_removed', __('menu.log_order_item_removed', [
             'order_id' => $order->id,
         ]));
     }
@@ -149,7 +150,7 @@ class OrderService
 
         $order->update(['status' => OrderStatus::Sent]);
 
-        $this->logCafe($order, auth()->user(), 'order.sent_kitchen', __('menu.log_order_sent_kitchen', ['id' => $order->id]));
+        $this->logCafe($order, $this->actor(), 'order.sent_kitchen', __('menu.log_order_sent_kitchen', ['id' => $order->id]));
 
         return $order->fresh(['items.product', 'cafeTable']);
     }
@@ -170,7 +171,7 @@ class OrderService
 
         $order->update(['status' => OrderStatus::AwaitingPayment]);
 
-        $this->logCafe($order, auth()->user(), 'order.payment_requested', __('menu.log_order_payment_requested', ['id' => $order->id]));
+        $this->logCafe($order, $this->actor(), 'order.payment_requested', __('menu.log_order_payment_requested', ['id' => $order->id]));
 
         return $order->fresh(['items.product', 'cafeTable']);
     }
@@ -202,7 +203,7 @@ class OrderService
             app(ReservationService::class)->finalizeCheckoutForTable($table, $closedAt, $order->created_at);
             $table->update(['status' => TableStatus::Empty]);
 
-            $this->logCafe($order, auth()->user(), 'order.voided', __('menu.log_order_voided', ['id' => $order->id]));
+            $this->logCafe($order, $this->actor(), 'order.voided', __('menu.log_order_voided', ['id' => $order->id]));
 
             return $order->fresh();
         });
@@ -264,13 +265,20 @@ class OrderService
             app(ReservationService::class)->finalizeCheckoutForTable($table, $closedAt, $order->created_at);
             $table->update(['status' => TableStatus::Empty]);
 
-            $this->logCafe($order, auth()->user(), 'order.closed', __('menu.log_order_closed', [
+            $this->logCafe($order, $this->actor(), 'order.closed', __('menu.log_order_closed', [
                 'id' => $order->id,
                 'total' => $finalTotal,
             ]), ['payment_method' => $paymentMethod]);
 
             return $order->fresh();
         });
+    }
+
+    private function actor(): ?User
+    {
+        $user = Auth::user();
+
+        return $user instanceof User ? $user : null;
     }
 
     private function logCafe(Order $order, ?User $user, string $action, string $summary, array $context = []): void
