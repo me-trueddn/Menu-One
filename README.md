@@ -7,8 +7,8 @@
 | | |
 |---|---|
 | **Son build** | Build 1 — 1.0.27 |
-| **Geliştirme sürümü** | 2.0.1 |
-| **Testler** | 35 test geçiyor |
+| **Geliştirme sürümü** | 2.0.109 |
+| **Durum** | Aktif geliştirme (2.x) |
 
 ```bash
 php artisan version:show      # mevcut sürüm + build geçmişi
@@ -18,12 +18,24 @@ php artisan version:build       # release build al
 
 Footer'da `v{sürüm}` ve `Build {n}` etiketi gösterilir.
 
+## Son Eklenenler (2.0.101 → 2.0.109)
+
+- **Ticket sistemi:** Profil içinden ticket oluşturma/yanıtlama, platform ticket yönetimi, kategori/etiket/yetki ekranları
+- **Log Yönetimi:** Platform ve cafe log sekmeleri, IP adresi, retention ayarı, günlük `logs:purge`
+- **Audit detayları:** Anlamlı işlem özeti (route adı yerine açıklayıcı metin), login/logout ayrımı (platform vs cafe)
+- **Cloudflare medya entegrasyonu:** Kategori/ürün görselleri için cloud upload + fallback akışı
+- **Carry-over adisyon:** Önceki günden açık kalan adisyon kasiyerde görünür ve kapatılabilir
+- **DB güvenlik araçları:** `db:backup`, `db:localize`, üretim kontrolleri ve deploy doğrulama iyileştirmeleri
+
 ## Özellikler
 
 ### Platform (`/platform/*`)
 - Cafe (tenant) ve lisans tipi yönetimi
 - Kullanıcı / müşteri / personel yönetimi, 2FA, parola politikası
 - Site & mail ayarları, tenant destek modu, impersonation
+- Ticket yönetimi (liste, detay, cevap, durum)
+- Log yönetimi (platform/cafe sekmeleri, retention ayarı)
+- Cloudflare medya ayarları ve test araçları
 
 ### Cafe Admin (`/admin/*`)
 - Masa, kategori, ürün, personel CRUD
@@ -39,6 +51,7 @@ Footer'da `v{sürüm}` ve `Build {n}` etiketi gösterilir.
 - Masa listesi ve ödeme ekranı
 - Nakit / kredi kartı, bölünmüş ödeme (`split_count`: 0 = tam tutar, 1+ = kişi başı)
 - Ödeme sonrası adisyon kapanır, masa boşalır
+- Önceki günden kalan (carry-over) adisyonları görür ve kapatabilir
 
 ### Rezervasyonlar (`/reservations/*`)
 - Garson, kasiyer ve cafe admin erişebilir
@@ -54,6 +67,7 @@ Footer'da `v{sürüm}` ve `Build {n}` etiketi gösterilir.
 ### Müşteri / Profil
 - Cafe sahipleri profilden cafe oluşturabilir (Free / Premium lisans)
 - Çoklu cafe, tenant seçimi, profil & 2FA ayarları
+- Profil sekmesinden ticket oluşturma ve takip
 
 ### Güvenlik & oturum
 - Oturum boşta kalma süresi (platform ayarı, varsayılan 30 dk)
@@ -187,6 +201,18 @@ npm run build
 
 ```bash
 php artisan test
+```
+
+> Testler yalnızca sqlite (`:memory:`) ile çalışacak şekilde korunmuştur; üretim/local MySQL'e karşı test koşumu engellenir.
+
+## Operasyon Komutları (Yeni)
+
+```bash
+php artisan logs:purge          # retention süresi dolan logları temizler
+php artisan db:backup           # storage/backups altına tam DB yedeği alır
+php artisan db:localize         # canlı URL'leri local URL'ye çevirir (önce yedek alır)
+php artisan oauth:diagnose      # OAuth redirect/credential tanı çıktısı
+php artisan deploy:check-production
 ```
 
 ## MSSQL (İleride)
