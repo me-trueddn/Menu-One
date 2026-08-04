@@ -1,15 +1,29 @@
-# Menu-One — Cloud Cafe Adisyon Sistemi
+# Menu-One — Cafe Adisyon, QR Menü & Restoran POS (Laravel SaaS)
 
-Çok kiracılı (multi-tenant) cafe adisyon SaaS uygulaması. Laravel 12 + PHP 8.2+, MariaDB/MySQL, AdminLTE 4 teması.
+**Menu-One**, cafe / restoran / kahve dükkanı için **cloud adisyon sistemi**, **QR menü**, **masa yönetimi**, **garson–kasiyer–mutfak** panelleri ve **çok kiracılı (multi-tenant) SaaS** altyapısı sunar.
 
-**Canlı görmek isteyenler için:** [https://panel.trueddn.com.tr](https://panel.trueddn.com.tr)
+Laravel 12 · PHP 8.2+ · MariaDB/MySQL · AdminLTE 4 · Türkçe / İngilizce
+
+**Canlı demo:** [https://panel.trueddn.com.tr](https://panel.trueddn.com.tr)
+
+> GitHub’da arayanlar için: *cafe adisyon*, *restoran POS*, *QR menü*, *dijital menü*, *masa sipariş sistemi*, *Laravel multi-tenant SaaS*.
+
+## GitHub About (SEO — repo ayarları)
+
+GitHub → **About** (dişli) alanına şunları yazın; arama sıralamasını güçlendirir:
+
+| Alan | Önerilen değer |
+|------|----------------|
+| **Description** | Cafe adisyon & QR menü SaaS — Laravel multi-tenant restaurant POS (waiter, cashier, kitchen) |
+| **Website** | https://panel.trueddn.com.tr |
+| **Topics** | `cafe-adisyon` `restaurant-pos` `qr-menu` `digital-menu` `laravel` `multi-tenant` `saas` `php` `adisyon` `waiter` `cashier` `kitchen` |
 
 ## Sürüm
 
 | | |
 |---|---|
 | **Son build** | Build 1 — 1.0.27 |
-| **Geliştirme sürümü** | 2.0.109 |
+| **Geliştirme sürümü** | 2.0.113 |
 | **Durum** | Aktif geliştirme (2.x) |
 
 ```bash
@@ -20,7 +34,15 @@ php artisan version:build       # release build al
 
 Footer'da `v{sürüm}` ve `Build {n}` etiketi gösterilir.
 
-## Son Eklenenler (2.0.101 → 2.0.109)
+## Neden Menu-One?
+
+- **Cafe / restoran adisyon** — masa aç, ürün ekle, mutfağa gönder, kasada tahsil et
+- **QR menü** — masa bazlı QR kod, dijital menü aktivasyonu, yazdırılabilir QR
+- **Rol bazlı paneller** — platform admin, cafe admin, garson, kasiyer, mutfak
+- **SaaS / multi-tenant** — tek panelden birden fazla cafe (tenant) yönetimi
+- **Güvenlik** — 2FA, oturum politikası, audit log, ticket desteği
+
+## Son Eklenenler (2.0.101 → 2.0.112)
 
 - **Ticket sistemi:** Profil içinden ticket oluşturma/yanıtlama, platform ticket yönetimi, kategori/etiket/yetki ekranları
 - **Log Yönetimi:** Platform ve cafe log sekmeleri, IP adresi, retention ayarı, günlük `logs:purge`

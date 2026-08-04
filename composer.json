@@ -1,9 +1,21 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "trueddn/menu-one",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "description": "Menu-One — Cafe adisyon, QR menü ve restoran POS SaaS (Laravel multi-tenant).",
+    "keywords": [
+        "cafe-adisyon",
+        "restaurant-pos",
+        "qr-menu",
+        "digital-menu",
+        "laravel",
+        "multi-tenant",
+        "saas",
+        "adisyon",
+        "waiter",
+        "cashier",
+        "kitchen"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.2",
