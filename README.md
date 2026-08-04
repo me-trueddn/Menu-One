@@ -24,6 +24,7 @@ Footer'da `v{sürüm}` ve `Build {n}` etiketi gösterilir.
 - **Log Yönetimi:** Platform ve cafe log sekmeleri, IP adresi, retention ayarı, günlük `logs:purge`
 - **Audit detayları:** Anlamlı işlem özeti (route adı yerine açıklayıcı metin), login/logout ayrımı (platform vs cafe)
 - **Cloudflare medya entegrasyonu:** Kategori/ürün görselleri için cloud upload + fallback akışı
+- **QR Menü akışı:** Dijital menü aktivasyonu, QR menü oluşturma ve masa bazlı QR kullanım senaryoları
 - **Carry-over adisyon:** Önceki günden açık kalan adisyon kasiyerde görünür ve kapatılabilir
 - **DB güvenlik araçları:** `db:backup`, `db:localize`, üretim kontrolleri ve deploy doğrulama iyileştirmeleri
 
@@ -40,6 +41,8 @@ Footer'da `v{sürüm}` ve `Build {n}` etiketi gösterilir.
 ### Cafe Admin (`/admin/*`)
 - Masa, kategori, ürün, personel CRUD
 - Raporlar, operasyon ekranı (mutfak görünümü)
+- QR menü oluşturma ve yönetimi
+- Masa/alan bazlı QR kod üretimi ve yazdırma akışı
 
 ### Garson (`/waiter/*`)
 - Masa grid, adisyon aç/kapat, ürün ekle/çıkar, mutfağa gönder
@@ -187,6 +190,12 @@ Yeni dil eklemek için `config/locale.php` içine locale kodunu ekleyin ve `lang
 | `/cashier/*` | cashier, cafe_admin |
 | `/kitchen/*` | kitchen |
 | `/reservations/*` | waiter, cashier, cafe_admin |
+
+## QR Kod & QR Menü
+
+- Cafe admin panelinden dijital menü (QR menü) aktif/pasif yönetimi yapılabilir.
+- Masalar için QR kodları üretilerek müşterinin menüye hızlı erişimi sağlanır.
+- QR akışı, adisyon/sipariş süreciyle uyumlu çalışacak şekilde tasarlanmıştır (masa üzerinden sipariş bağlamı korunur).
 
 ## Tema Yapısı
 
