@@ -2,6 +2,8 @@
 
 Çok kiracılı (multi-tenant) cafe adisyon SaaS uygulaması. Laravel 12 + PHP 8.2+, MariaDB/MySQL, AdminLTE 4 teması.
 
+**Canlı görmek isteyenler için:** [https://panel.trueddn.com.tr](https://panel.trueddn.com.tr)
+
 ## Sürüm
 
 | | |
