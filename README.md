@@ -23,7 +23,7 @@ GitHub → **About** (dişli) alanına şunları yazın; arama sıralamasını g
 | | |
 |---|---|
 | **Son build** | Build 1 — 1.0.27 |
-| **Geliştirme sürümü** | 2.0.113 |
+| **Geliştirme sürümü** | 2.0.114 |
 | **Durum** | Aktif geliştirme (2.x) |
 
 ```bash
@@ -237,6 +237,16 @@ php artisan test
 ```
 
 > Testler yalnızca sqlite (`:memory:`) ile çalışacak şekilde korunmuştur; üretim/local MySQL'e karşı test koşumu engellenir.
+
+### GitHub Actions (CI)
+
+Push / PR (`main`) sonrası otomatik çalışır:
+
+| Workflow | Ne yapar |
+|----------|----------|
+| **Tests** | PHP 8.2 & 8.3 — `composer install` + `php artisan test` |
+| **Frontend** | Node 20 — `npm ci` + `npm run build` (asset değişince) |
+| **Dependabot** | Haftalık Composer / npm güncelleme PR’ları |
 
 ## Operasyon Komutları (Yeni)
 
