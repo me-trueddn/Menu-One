@@ -195,7 +195,7 @@ Varsayılan dil **Türkçe** (`APP_LOCALE=tr`). İngilizce için navbar veya gir
 Yeni dil eklemek için `config/locale.php` içine locale kodunu ekleyin ve `lang/{kod}/menu.php` oluşturun.
 
 ## Demo Hesaplar
-
+not : canlı sistemde bu hesaplar pasiftir. sadece kurulum yaptığınızda default bu hesaplar gelmektedir. ! 
 | Rol | E-posta | Şifre |
 |-----|---------|-------|
 | Platform Admin | admin@menu-one.test | password |
